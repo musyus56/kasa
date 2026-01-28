@@ -447,6 +447,8 @@
         
         .search-box {
             margin-bottom: 20px;
+            display: flex;
+            gap: 10px;
         }
         
         .search-box input {
@@ -454,6 +456,12 @@
             background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="%23718096"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"/></svg>');
             background-repeat: no-repeat;
             background-position: 15px center;
+            flex: 1;
+        }
+        
+        .search-box button {
+            width: auto;
+            padding: 12px 20px;
         }
         
         footer {
@@ -476,6 +484,14 @@
             
             .action-buttons {
                 flex-direction: column;
+            }
+            
+            .search-box {
+                flex-direction: column;
+            }
+            
+            .search-box button {
+                width: 100%;
             }
         }
         
@@ -586,6 +602,43 @@
             border-radius: 10px;
             font-size: 12px;
         }
+        
+        .price-input-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .price-input {
+            width: 100px;
+            text-align: center;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+        }
+        
+        .update-price-btn {
+            background-color: #4299e1;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .update-price-btn:hover {
+            background-color: #3182ce;
+        }
+        
+        .cart-item-price-input {
+            width: 100px;
+            padding: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            text-align: center;
+        }
     </style>
 </head>
 <body>
@@ -621,10 +674,6 @@
                             <label for="productName">Ürün Adı</label>
                             <input type="text" id="productName" placeholder="Ürün adını girin...">
                         </div>
-                        <div class="form-group">
-                            <label for="productPrice">Ürün Fiyatı (₺)</label>
-                            <input type="number" id="productPrice" placeholder="Fiyat girin..." step="0.01" min="0">
-                        </div>
                         <button id="addProductBtn" class="secondary-btn">Ürün Ekle</button>
                         <div id="singleProductMessage" class="message"></div>
                     </div>
@@ -637,7 +686,7 @@
                                 <input type="file" id="excelFile" accept=".xlsx, .xls, .csv">
                                 <div class="file-input-btn">Excel Dosyası Seç</div>
                             </div>
-                            <p style="margin-top: 10px; font-size: 14px; color: #666;">Sütun başlıkları: "Ürün Adı" ve "Fiyat"</p>
+                            <p style="margin-top: 10px; font-size: 14px; color: #666;">Sütun başlığı: "Ürün Adı" (Fiyat opsiyonel)</p>
                         </div>
                         <button id="uploadExcelBtn">Excel'den Ürünleri Yükle</button>
                         <div id="excelMessage" class="message"></div>
@@ -654,6 +703,9 @@
                 <h2>Mevcut Ürünler</h2>
                 <div class="search-box">
                     <input type="text" id="productSearch" placeholder="Ürün ara..." onkeyup="searchProducts()">
+                    <button id="deleteAllProductsBtn" class="danger-btn">
+                        <i class="bi bi-trash"></i> Tümünü Sil
+                    </button>
                 </div>
                 <div id="loadingProducts">Ürünler yükleniyor...</div>
                 <div id="productsGrid" class="grid-container" style="display: none;">
@@ -692,6 +744,9 @@
                 <h2>Müşteriler</h2>
                 <div class="search-box">
                     <input type="text" id="customerSearch" placeholder="Müşteri ara..." onkeyup="searchCustomers()">
+                    <button id="deleteAllCustomersBtn" class="danger-btn">
+                        <i class="bi bi-trash"></i> Tümünü Sil
+                    </button>
                 </div>
                 <div id="loadingCustomers">Müşteriler yükleniyor...</div>
                 <table id="customersTable" style="display:none;">
@@ -719,6 +774,9 @@
                 <h2>Satış Geçmişi</h2>
                 <div class="search-box">
                     <input type="text" id="salesSearch" placeholder="Satış ara..." onkeyup="searchSales()">
+                    <button id="deleteAllSalesBtn" class="danger-btn">
+                        <i class="bi bi-trash"></i> Tümünü Sil
+                    </button>
                 </div>
                 <div id="loadingSales">Satışlar yükleniyor...</div>
                 <table id="salesTable" style="display:none;">
@@ -820,17 +878,17 @@
         // Örnek Excel dosyası indirme fonksiyonu
         function downloadSampleExcel() {
             const sampleData = [
-                ["Ürün Adı", "Fiyat"],
-                ["Bilgisayar", 15000],
-                ["Mouse", 250],
-                ["Klavye", 450],
-                ["Monitör", 3000],
-                ["Yazıcı", 1200],
-                ["Tarayıcı", 800],
-                ["Tablet", 5000],
-                ["Telefon", 8500],
-                ["Kulaklık", 350],
-                ["Hoparlör", 1200]
+                ["Ürün Adı"],
+                ["Bilgisayar"],
+                ["Mouse"],
+                ["Klavye"],
+                ["Monitör"],
+                ["Yazıcı"],
+                ["Tarayıcı"],
+                ["Tablet"],
+                ["Telefon"],
+                ["Kulaklık"],
+                ["Hoparlör"]
             ];
             
             const ws = XLSX.utils.aoa_to_sheet(sampleData);
@@ -840,8 +898,8 @@
             XLSX.writeFile(wb, "urun_listesi_ornek.xlsx");
         }
         
-        // Ürün ekleme fonksiyonu
-        function addProduct(productName, productPrice = 0) {
+        // Ürün ekleme fonksiyonu - FİYAT OPSİYONEL
+        function addProduct(productName) {
             if (!productName.trim()) {
                 showMessage('singleProductMessage', 'Ürün adı boş olamaz!', 'error');
                 return;
@@ -850,7 +908,7 @@
             const newProductRef = db.ref('products').push();
             const productData = {
                 name: productName.trim(),
-                price: parseFloat(productPrice) || 0,
+                price: 0, // Fiyat opsiyonel, 0 olarak kaydediyoruz
                 createdAt: new Date().toISOString(),
                 id: newProductRef.key
             };
@@ -859,7 +917,6 @@
                 .then(() => {
                     showMessage('singleProductMessage', `"${productName}" başarıyla eklendi!`, 'success');
                     document.getElementById('productName').value = '';
-                    document.getElementById('productPrice').value = '';
                     document.getElementById('productName').focus();
                     loadProducts();
                 })
@@ -868,7 +925,7 @@
                 });
         }
         
-        // Excel'den ürün ekleme fonksiyonu
+        // Excel'den ürün ekleme fonksiyonu - FİYAT OPSİYONEL
         function addProductsFromExcel(file) {
             const reader = new FileReader();
             
@@ -893,7 +950,6 @@
                     
                     jsonData.forEach((row, index) => {
                         let productName = '';
-                        let productPrice = 0;
                         
                         // Farklı sütun isimlerini kontrol et
                         if (row['Ürün Adı'] !== undefined) productName = row['Ürün Adı'];
@@ -902,17 +958,11 @@
                         else if (row['productName'] !== undefined) productName = row['productName'];
                         else productName = Object.values(row)[0];
                         
-                        if (row['Fiyat'] !== undefined) productPrice = row['Fiyat'];
-                        else if (row['Price'] !== undefined) productPrice = row['Price'];
-                        else if (row['fiyat'] !== undefined) productPrice = row['fiyat'];
-                        else if (row['price'] !== undefined) productPrice = row['price'];
-                        else productPrice = Object.values(row)[1] || 0;
-                        
                         if (productName && productName.toString().trim()) {
                             const newProductRef = db.ref('products').push();
                             const productData = {
                                 name: productName.toString().trim(),
-                                price: parseFloat(productPrice) || 0,
+                                price: 0, // Fiyat opsiyonel, 0 olarak kaydediyoruz
                                 createdAt: new Date().toISOString(),
                                 id: newProductRef.key
                             };
@@ -998,8 +1048,14 @@
                     productCard.innerHTML = `
                         <div class="product-name">${product.name}</div>
                         <div class="product-meta">
-                            <span>Fiyat: ${product.price.toFixed(2)} ₺</span>
+                            <span>${product.price > 0 ? 'Fiyat: ' + product.price.toFixed(2) + ' ₺' : 'Fiyat: Belirtilmemiş'}</span>
                             <span>ID: ${product.id.substring(0, 6)}...</span>
+                        </div>
+                        <div class="price-input-container">
+                            <input type="number" class="price-input" id="price-${key}" placeholder="Fiyat (₺)" step="0.01" min="0" value="${product.price > 0 ? product.price : ''}">
+                            <button class="update-price-btn" onclick="updateProductPrice('${key}')">
+                                <i class="bi bi-check"></i> Fiyat Güncelle
+                            </button>
                         </div>
                         <div class="quantity-control">
                             <button class="quantity-btn minus-btn" onclick="updateCartQuantity('${key}', -1)">-</button>
@@ -1027,6 +1083,29 @@
                 
             }, (error) => {
                 document.getElementById('loadingProducts').textContent = "Ürünler yüklenirken hata oluştu: " + error.message;
+            });
+        }
+        
+        // Ürün fiyatını güncelleme fonksiyonu
+        function updateProductPrice(productId) {
+            const priceInput = document.getElementById(`price-${productId}`);
+            const price = parseFloat(priceInput.value) || 0;
+            
+            db.ref('products/' + productId).update({
+                price: price
+            })
+            .then(() => {
+                showMessage('singleProductMessage', 'Ürün fiyatı güncellendi!', 'success');
+                // Sepetteki ürünün fiyatını da güncelle
+                const cartItemIndex = cart.findIndex(item => item.id === productId);
+                if (cartItemIndex > -1) {
+                    cart[cartItemIndex].price = price;
+                    updateCartDisplay();
+                    updateCartIndicator();
+                }
+            })
+            .catch(error => {
+                showMessage('singleProductMessage', 'Fiyat güncellenirken hata oluştu: ' + error.message, 'error');
             });
         }
         
@@ -1062,7 +1141,36 @@
             }
         }
         
-        // Sepet işlemleri - DEĞİŞTİRİLDİ: Sepete ekleyince sekmeye geçmiyor
+        // TÜM ÜRÜNLERİ SİLME FONKSİYONU
+        function deleteAllProducts() {
+            if (!allProducts || allProducts.length === 0) {
+                showMessage('singleProductMessage', 'Silinecek ürün bulunamadı!', 'error');
+                return;
+            }
+            
+            if (confirm(`TÜM ÜRÜNLERİ SİLMEK İSTEDİĞİNİZE EMİN MİSİNİZ?\n\nBu işlem geri alınamaz!\n${allProducts.length} adet ürün silinecek.`)) {
+                // Tüm ürünleri sil
+                const deletePromises = allProducts.map(product => {
+                    return db.ref('products/' + product.id).remove();
+                });
+                
+                // Tüm silme işlemlerini bekleyelim
+                Promise.all(deletePromises)
+                    .then(() => {
+                        // Sepeti de temizle
+                        cart = [];
+                        updateCartDisplay();
+                        updateCartIndicator();
+                        
+                        showMessage('singleProductMessage', `Tüm ürünler (${allProducts.length} adet) başarıyla silindi!`, 'success');
+                    })
+                    .catch(error => {
+                        showMessage('singleProductMessage', 'Ürünler silinirken hata oluştu: ' + error.message, 'error');
+                    });
+            }
+        }
+        
+        // Sepete ekleme fonksiyonu - FİYAT MANUEL GİRİLECEK
         function addToCart(productId, showNotification = true) {
             const quantityInput = document.getElementById(`qty-${productId}`);
             const quantity = parseInt(quantityInput.value) || 1;
@@ -1074,6 +1182,56 @@
                 return;
             }
             
+            // Fiyatı manuel olarak almak için modal aç
+            showPriceModal(productId, quantity, showNotification);
+        }
+        
+        // Fiyat modal fonksiyonu
+        function showPriceModal(productId, quantity, showNotification) {
+            // Geçici modal oluştur
+            const modalHtml = `
+                <div id="priceModal" class="customer-modal" style="display: flex;">
+                    <div class="modal-content">
+                        <span class="close-modal" onclick="closePriceModal()">&times;</span>
+                        <h2>Fiyat Girin</h2>
+                        <div class="form-group">
+                            <label for="manualPrice">Ürün Fiyatı (₺)</label>
+                            <input type="number" id="manualPrice" placeholder="Fiyat girin..." step="0.01" min="0" autofocus>
+                        </div>
+                        <button onclick="addToCartWithManualPrice('${productId}', ${quantity}, ${showNotification})" class="primary-btn">Sepete Ekle</button>
+                    </div>
+                </div>
+            `;
+            
+            // Modalı ekle
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+            
+            // Modal dışına tıklayınca kapat
+            document.getElementById('priceModal').addEventListener('click', function(e) {
+                if (e.target.id === 'priceModal') {
+                    closePriceModal();
+                }
+            });
+        }
+        
+        function closePriceModal() {
+            const modal = document.getElementById('priceModal');
+            if (modal) {
+                modal.remove();
+            }
+        }
+        
+        // Manuel fiyat ile sepete ekleme
+        function addToCartWithManualPrice(productId, quantity, showNotification) {
+            const manualPriceInput = document.getElementById('manualPrice');
+            const price = parseFloat(manualPriceInput.value) || 0;
+            
+            if (price <= 0) {
+                alert('Lütfen geçerli bir fiyat girin!');
+                manualPriceInput.focus();
+                return;
+            }
+            
             db.ref('products/' + productId).once('value').then(snapshot => {
                 const product = snapshot.val();
                 if (!product) return;
@@ -1082,28 +1240,49 @@
                 
                 if (existingItemIndex > -1) {
                     cart[existingItemIndex].quantity += quantity;
+                    cart[existingItemIndex].price = price; // Fiyatı güncelle
                 } else {
                     cart.push({
                         id: productId,
                         name: product.name,
-                        price: product.price || 0,
+                        price: price, // Manuel girilen fiyat
                         quantity: quantity
                     });
                 }
                 
-                quantityInput.value = cart.find(item => item.id === productId).quantity;
+                document.getElementById(`qty-${productId}`).value = cart.find(item => item.id === productId).quantity;
                 updateCartDisplay();
                 
                 if (showNotification) {
-                    showMessage('singleProductMessage', `${product.name} sepete eklendi!`, 'success');
+                    showMessage('singleProductMessage', `${product.name} (${price.toFixed(2)} ₺) sepete eklendi!`, 'success');
                 }
                 
                 // Sepet göstergesini güncelle
                 updateCartIndicator();
                 
-                // Sepete ekledikten sonra sekme değişmiyor - SADECE AYNI SAYFADA KALIYOR
+                // Modalı kapat
+                closePriceModal();
                 
             });
+        }
+        
+        // Sepet ürün fiyatını güncelleme
+        function updateCartItemPrice(productId) {
+            const priceInput = document.getElementById(`cart-price-${productId}`);
+            const price = parseFloat(priceInput.value) || 0;
+            
+            if (price < 0) {
+                alert('Fiyat negatif olamaz!');
+                return;
+            }
+            
+            const cartItemIndex = cart.findIndex(item => item.id === productId);
+            if (cartItemIndex > -1) {
+                cart[cartItemIndex].price = price;
+                updateCartDisplay();
+                updateCartIndicator();
+                showMessage('singleProductMessage', 'Sepet fiyatı güncellendi!', 'success');
+            }
         }
         
         function updateCartQuantity(productId, change) {
@@ -1171,7 +1350,17 @@
                     <div class="cart-item">
                         <div class="cart-item-info">
                             <div class="cart-item-name">${item.name}</div>
-                            <div class="cart-item-price">${item.price.toFixed(2)} ₺ x ${item.quantity} = ${itemTotal.toFixed(2)} ₺</div>
+                            <div class="cart-item-price">
+                                <div style="display: flex; align-items: center; gap: 10px; margin-top: 5px;">
+                                    <span>Fiyat:</span>
+                                    <input type="number" class="cart-item-price-input" id="cart-price-${item.id}" 
+                                           value="${item.price.toFixed(2)}" step="0.01" min="0">
+                                    <span>₺ x ${item.quantity} = ${itemTotal.toFixed(2)} ₺</span>
+                                    <button class="update-price-btn" onclick="updateCartItemPrice('${item.id}')" style="padding: 4px 8px; font-size: 12px;">
+                                        <i class="bi bi-check"></i>
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                         <div class="cart-item-actions">
                             <button class="quantity-btn minus-btn" onclick="updateCartQuantity('${item.id}', -1)">-</button>
@@ -1452,304 +1641,307 @@
                         <div class="customer-details">
                             <h3>${customer.name} ${customer.surname}</h3>
                             <p><strong>Telefon:</strong> ${customer.phone}</p>
-                        <p><strong>E-posta:</strong> ${customer.email || '-'}</p>
-                        <p><strong>Adres:</strong> ${customer.address || '-'}</p>
-                        <p><strong>Toplam Satış:</strong> ${customer.totalSales ? customer.totalSales.toFixed(2) + ' ₺' : '0 ₺'}</p>
-                        <p><strong>Satış Sayısı:</strong> ${customer.saleCount || 0}</p>
+                            <p><strong>E-posta:</strong> ${customer.email || '-'}</p>
+                            <p><strong>Adres:</strong> ${customer.address || '-'}</p>
+                            <p><strong>Toplam Satış:</strong> ${customer.totalSales ? customer.totalSales.toFixed(2) + ' ₺' : '0 ₺'}</p>
+                            <p><strong>Satış Sayısı:</strong> ${customer.saleCount || 0}</p>
+                        </div>
+                        <div class="customer-products">
+                            <h4>Satış Geçmişi</h4>
+                            ${salesHtml}
+                        </div>
+                    `;
+                    
+                    document.getElementById('saleDetailTitle').textContent = 'Müşteri Detayları';
+                    document.getElementById('saleDetailContent').innerHTML = modalContent;
+                    document.getElementById('saleDetailModal').style.display = 'flex';
+                });
+            });
+        }
+        
+        function deleteCustomer(customerId, customerName) {
+            if (confirm(`"${customerName}" müşterisini silmek istediğinize emin misiniz?`)) {
+                db.ref('customers/' + customerId).remove()
+                    .then(() => {
+                        showMessage('singleProductMessage', `"${customerName}" müşterisi başarıyla silindi!`, 'success');
+                    })
+                    .catch(error => {
+                        showMessage('singleProductMessage', 'Müşteri silinirken hata oluştu: ' + error.message, 'error');
+                    });
+            }
+        }
+        
+        // Satışları yükle
+        function loadSales() {
+            if (!db) {
+                document.getElementById('loadingSales').textContent = "Firebase bağlantısı kurulamadı!";
+                return;
+            }
+            
+            db.ref('sales').on('value', (snapshot) => {
+                const sales = snapshot.val();
+                const salesTable = document.getElementById('salesTable');
+                const salesTableBody = document.getElementById('salesTableBody');
+                const loadingSales = document.getElementById('loadingSales');
+                
+                salesTableBody.innerHTML = '';
+                
+                if (!sales || Object.keys(sales).length === 0) {
+                    loadingSales.textContent = "Henüz satış kaydı bulunmuyor.";
+                    salesTable.style.display = 'none';
+                    return;
+                }
+                
+                loadingSales.style.display = 'none';
+                salesTable.style.display = 'table';
+                
+                // Satışları global diziye kaydet
+                allSales = [];
+                
+                // Satışları tarihe göre sırala (yeniden eskiye)
+                const sortedSaleKeys = Object.keys(sales).sort((a, b) => {
+                    return new Date(sales[b].createdAt) - new Date(sales[a].createdAt);
+                });
+                
+                sortedSaleKeys.forEach(key => {
+                    const sale = sales[key];
+                    allSales.push({
+                        id: key,
+                        ...sale
+                    });
+                    
+                    const row = document.createElement('tr');
+                    const customerName = sale.customer ? (sale.customer.name + ' ' + sale.customer.surname).toLowerCase() : '';
+                    const saleId = sale.id.toLowerCase();
+                    
+                    row.dataset.id = key;
+                    row.dataset.customer = customerName;
+                    row.dataset.saleId = saleId;
+                    
+                    row.innerHTML = `
+                        <td>${sale.id.substring(0, 8)}...</td>
+                        <td>${sale.customer ? sale.customer.name + ' ' + sale.customer.surname : 'Müşteri Yok'}</td>
+                        <td>${sale.products ? sale.products.length : 0}</td>
+                        <td>${sale.total ? sale.total.toFixed(2) + ' ₺' : '0 ₺'}</td>
+                        <td>${new Date(sale.createdAt).toLocaleDateString('tr-TR')}</td>
+                        <td class="action-buttons">
+                            <button class="action-btn edit-btn" onclick="viewSaleDetail('${sale.id}')">
+                                <i class="bi bi-eye"></i> Detay
+                            </button>
+                            <button class="action-btn delete-btn" onclick="deleteSale('${sale.id}')">
+                                <i class="bi bi-trash"></i> Sil
+                            </button>
+                        </td>
+                    `;
+                    
+                    salesTableBody.appendChild(row);
+                });
+                
+            }, (error) => {
+                document.getElementById('loadingSales').textContent = "Satışlar yüklenirken hata oluştu: " + error.message;
+            });
+        }
+        
+        // Satış arama fonksiyonu
+        function searchSales() {
+            const searchTerm = document.getElementById('salesSearch').value.toLowerCase();
+            const rows = document.querySelectorAll('#salesTableBody tr');
+            
+            rows.forEach(row => {
+                const customerName = row.dataset.customer;
+                const saleId = row.dataset.saleId;
+                
+                if (searchTerm === '' || customerName.includes(searchTerm) || saleId.includes(searchTerm)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        }
+        
+        function viewSaleDetail(saleId) {
+            db.ref('sales/' + saleId).once('value').then(snapshot => {
+                const sale = snapshot.val();
+                if (!sale) return;
+                
+                let productsHtml = '';
+                if (sale.products && sale.products.length > 0) {
+                    sale.products.forEach(product => {
+                        productsHtml += `
+                            <div style="margin-bottom: 10px; padding: 10px; background: #f8f9fa; border-radius: 6px;">
+                                <strong>${product.name}</strong><br>
+                                Fiyat: ${product.price.toFixed(2)} ₺ x ${product.quantity} = ${(product.price * product.quantity).toFixed(2)} ₺
+                            </div>
+                        `;
+                    });
+                } else {
+                    productsHtml = '<p>Ürün bilgisi bulunmamaktadır.</p>';
+                }
+                
+                const modalContent = `
+                    <div class="customer-details">
+                        <h3>Satış #${sale.id.substring(0, 8)}</h3>
+                        <p><strong>Müşteri:</strong> ${sale.customer ? sale.customer.name + ' ' + sale.customer.surname : 'Müşteri Yok'}</p>
+                        <p><strong>Telefon:</strong> ${sale.customer ? sale.customer.phone : '-'}</p>
+                        <p><strong>Tarih:</strong> ${new Date(sale.createdAt).toLocaleString('tr-TR')}</p>
+                        <p><strong>Toplam Tutar:</strong> ${sale.total ? sale.total.toFixed(2) + ' ₺' : '0 ₺'}</p>
+                        <p><strong>Durum:</strong> <span class="badge badge-success">${sale.status || 'Tamamlandı'}</span></p>
                     </div>
                     <div class="customer-products">
-                        <h4>Satış Geçmişi</h4>
-                        ${salesHtml}
+                        <h4>Satılan Ürünler</h4>
+                        ${productsHtml}
                     </div>
                 `;
                 
-                document.getElementById('saleDetailTitle').textContent = 'Müşteri Detayları';
+                document.getElementById('saleDetailTitle').textContent = 'Satış Detayları';
                 document.getElementById('saleDetailContent').innerHTML = modalContent;
                 document.getElementById('saleDetailModal').style.display = 'flex';
             });
-        });
-    }
-    
-    function deleteCustomer(customerId, customerName) {
-        if (confirm(`"${customerName}" müşterisini silmek istediğinize emin misiniz?`)) {
-            db.ref('customers/' + customerId).remove()
-                .then(() => {
-                    showMessage('singleProductMessage', `"${customerName}" müşterisi başarıyla silindi!`, 'success');
-                })
-                .catch(error => {
-                    showMessage('singleProductMessage', 'Müşteri silinirken hata oluştu: ' + error.message, 'error');
-                });
-        }
-    }
-    
-    // Satışları yükle
-    function loadSales() {
-        if (!db) {
-            document.getElementById('loadingSales').textContent = "Firebase bağlantısı kurulamadı!";
-            return;
         }
         
-        db.ref('sales').on('value', (snapshot) => {
-            const sales = snapshot.val();
-            const salesTable = document.getElementById('salesTable');
-            const salesTableBody = document.getElementById('salesTableBody');
-            const loadingSales = document.getElementById('loadingSales');
-            
-            salesTableBody.innerHTML = '';
-            
-            if (!sales || Object.keys(sales).length === 0) {
-                loadingSales.textContent = "Henüz satış kaydı bulunmuyor.";
-                salesTable.style.display = 'none';
-                return;
+        function closeSaleDetailModal() {
+            document.getElementById('saleDetailModal').style.display = 'none';
+        }
+        
+        function deleteSale(saleId) {
+            if (confirm('Bu satışı silmek istediğinize emin misiniz?')) {
+                db.ref('sales/' + saleId).remove()
+                    .then(() => {
+                        showMessage('singleProductMessage', 'Satış başarıyla silindi!', 'success');
+                    })
+                    .catch(error => {
+                        showMessage('singleProductMessage', 'Satış silinirken hata oluştu: ' + error.message, 'error');
+                    });
             }
+        }
+        
+        // Mesaj gösterme fonksiyonu
+        function showMessage(elementId, message, type) {
+            const messageElement = document.getElementById(elementId);
+            messageElement.textContent = message;
+            messageElement.className = `message ${type}`;
             
-            loadingSales.style.display = 'none';
-            salesTable.style.display = 'table';
-            
-            // Satışları global diziye kaydet
-            allSales = [];
-            
-            // Satışları tarihe göre sırala (yeniden eskiye)
-            const sortedSaleKeys = Object.keys(sales).sort((a, b) => {
-                return new Date(sales[b].createdAt) - new Date(sales[a].createdAt);
+            setTimeout(() => {
+                messageElement.style.display = 'none';
+            }, 5000);
+        }
+        
+        // Tab geçiş fonksiyonu
+        function switchTab(tabName) {
+            // Tab butonlarını güncelle
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+                if (tab.dataset.tab === tabName) {
+                    tab.classList.add('active');
+                }
             });
             
-            sortedSaleKeys.forEach(key => {
-                const sale = sales[key];
-                allSales.push({
-                    id: key,
-                    ...sale
-                });
-                
-                const row = document.createElement('tr');
-                const customerName = sale.customer ? (sale.customer.name + ' ' + sale.customer.surname).toLowerCase() : '';
-                const saleId = sale.id.toLowerCase();
-                
-                row.dataset.id = key;
-                row.dataset.customer = customerName;
-                row.dataset.saleId = saleId;
-                
-                row.innerHTML = `
-                    <td>${sale.id.substring(0, 8)}...</td>
-                    <td>${sale.customer ? sale.customer.name + ' ' + sale.customer.surname : 'Müşteri Yok'}</td>
-                    <td>${sale.products ? sale.products.length : 0}</td>
-                    <td>${sale.total ? sale.total.toFixed(2) + ' ₺' : '0 ₺'}</td>
-                    <td>${new Date(sale.createdAt).toLocaleDateString('tr-TR')}</td>
-                    <td class="action-buttons">
-                        <button class="action-btn edit-btn" onclick="viewSaleDetail('${sale.id}')">
-                            <i class="bi bi-eye"></i> Detay
-                        </button>
-                        <button class="action-btn delete-btn" onclick="deleteSale('${sale.id}')">
-                            <i class="bi bi-trash"></i> Sil
-                        </button>
-                    </td>
-                `;
-                
-                salesTableBody.appendChild(row);
+            // Tab içeriklerini güncelle
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+                if (content.id === tabName + '-tab') {
+                    content.classList.add('active');
+                }
             });
-            
-        }, (error) => {
-            document.getElementById('loadingSales').textContent = "Satışlar yüklenirken hata oluştu: " + error.message;
-        });
-    }
-    
-    // Satış arama fonksiyonu
-    function searchSales() {
-        const searchTerm = document.getElementById('salesSearch').value.toLowerCase();
-        const rows = document.querySelectorAll('#salesTableBody tr');
-        
-        rows.forEach(row => {
-            const customerName = row.dataset.customer;
-            const saleId = row.dataset.saleId;
-            
-            if (searchTerm === '' || customerName.includes(searchTerm) || saleId.includes(searchTerm)) {
-                row.style.display = '';
-            } else {
-                row.style.display = 'none';
-            }
-        });
-    }
-    
-    function viewSaleDetail(saleId) {
-        db.ref('sales/' + saleId).once('value').then(snapshot => {
-            const sale = snapshot.val();
-            if (!sale) return;
-            
-            let productsHtml = '';
-            if (sale.products && sale.products.length > 0) {
-                sale.products.forEach(product => {
-                    productsHtml += `
-                        <div style="margin-bottom: 10px; padding: 10px; background: #f8f9fa; border-radius: 6px;">
-                            <strong>${product.name}</strong><br>
-                            Fiyat: ${product.price.toFixed(2)} ₺ x ${product.quantity} = ${(product.price * product.quantity).toFixed(2)} ₺
-                        </div>
-                    `;
-                });
-            } else {
-                productsHtml = '<p>Ürün bilgisi bulunmamaktadır.</p>';
-            }
-            
-            const modalContent = `
-                <div class="customer-details">
-                    <h3>Satış #${sale.id.substring(0, 8)}</h3>
-                    <p><strong>Müşteri:</strong> ${sale.customer ? sale.customer.name + ' ' + sale.customer.surname : 'Müşteri Yok'}</p>
-                    <p><strong>Telefon:</strong> ${sale.customer ? sale.customer.phone : '-'}</p>
-                    <p><strong>Tarih:</strong> ${new Date(sale.createdAt).toLocaleString('tr-TR')}</p>
-                    <p><strong>Toplam Tutar:</strong> ${sale.total ? sale.total.toFixed(2) + ' ₺' : '0 ₺'}</p>
-                    <p><strong>Durum:</strong> <span class="badge badge-success">${sale.status || 'Tamamlandı'}</span></p>
-                </div>
-                <div class="customer-products">
-                    <h4>Satılan Ürünler</h4>
-                    ${productsHtml}
-                </div>
-            `;
-            
-            document.getElementById('saleDetailTitle').textContent = 'Satış Detayları';
-            document.getElementById('saleDetailContent').innerHTML = modalContent;
-            document.getElementById('saleDetailModal').style.display = 'flex';
-        });
-    }
-    
-    function closeSaleDetailModal() {
-        document.getElementById('saleDetailModal').style.display = 'none';
-    }
-    
-    function deleteSale(saleId) {
-        if (confirm('Bu satışı silmek istediğinize emin misiniz?')) {
-            db.ref('sales/' + saleId).remove()
-                .then(() => {
-                    showMessage('singleProductMessage', 'Satış başarıyla silindi!', 'success');
-                })
-                .catch(error => {
-                    showMessage('singleProductMessage', 'Satış silinirken hata oluştu: ' + error.message, 'error');
-                });
-        }
-    }
-    
-    // Mesaj gösterme fonksiyonu
-    function showMessage(elementId, message, type) {
-        const messageElement = document.getElementById(elementId);
-        messageElement.textContent = message;
-        messageElement.className = `message ${type}`;
-        
-        setTimeout(() => {
-            messageElement.style.display = 'none';
-        }, 5000);
-    }
-    
-    // Tab geçiş fonksiyonu
-    function switchTab(tabName) {
-        // Tab butonlarını güncelle
-        document.querySelectorAll('.tab').forEach(tab => {
-            tab.classList.remove('active');
-            if (tab.dataset.tab === tabName) {
-                tab.classList.add('active');
-            }
-        });
-        
-        // Tab içeriklerini güncelle
-        document.querySelectorAll('.tab-content').forEach(content => {
-            content.classList.remove('active');
-            if (content.id === tabName + '-tab') {
-                content.classList.add('active');
-            }
-        });
-    }
-    
-    // Event listener'lar
-    document.addEventListener('DOMContentLoaded', () => {
-        // Firebase bağlantısını kontrol et
-        if (db) {
-            loadProducts();
-            loadCustomers();
-            loadSales();
         }
         
-        // Tab geçişleri
-        document.querySelectorAll('.tab').forEach(tab => {
-            tab.addEventListener('click', () => {
-                switchTab(tab.dataset.tab);
+        // Event listener'lar
+        document.addEventListener('DOMContentLoaded', () => {
+            // Firebase bağlantısını kontrol et
+            if (db) {
+                loadProducts();
+                loadCustomers();
+                loadSales();
+            }
+            
+            // Tab geçişleri
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    switchTab(tab.dataset.tab);
+                });
             });
-        });
-        
-        // Ürün ekleme
-        document.getElementById('addProductBtn').addEventListener('click', () => {
-            const productName = document.getElementById('productName').value;
-            const productPrice = document.getElementById('productPrice').value;
-            addProduct(productName, productPrice);
-        });
-        
-        document.getElementById('productName').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
+            
+            // Ürün ekleme
+            document.getElementById('addProductBtn').addEventListener('click', () => {
                 const productName = document.getElementById('productName').value;
-                const productPrice = document.getElementById('productPrice').value;
-                addProduct(productName, productPrice);
-            }
-        });
-        
-        // Excel yükleme
-        document.getElementById('uploadExcelBtn').addEventListener('click', () => {
-            const file = document.getElementById('excelFile').files[0];
-            if (!file) {
-                showMessage('excelMessage', 'Lütfen bir Excel dosyası seçin!', 'error');
-                return;
-            }
+                addProduct(productName);
+            });
             
-            const fileName = file.name.toLowerCase();
-            if (!fileName.endsWith('.xlsx') && !fileName.endsWith('.xls') && !fileName.endsWith('.csv')) {
-                showMessage('excelMessage', 'Lütfen geçerli bir Excel dosyası seçin!', 'error');
-                return;
-            }
+            document.getElementById('productName').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    const productName = document.getElementById('productName').value;
+                    addProduct(productName);
+                }
+            });
             
-            addProductsFromExcel(file);
-        });
-        
-        // Dosya seçildiğinde ismini göster
-        document.getElementById('excelFile').addEventListener('change', function() {
-            if (this.files && this.files[0]) {
-                const fileName = this.files[0].name;
-                const fileInputBtn = document.querySelector('.file-input-btn');
-                fileInputBtn.textContent = `Seçilen: ${fileName}`;
-                fileInputBtn.style.backgroundColor = '#2ecc71';
-            }
-        });
-        
-        // Sepet işlemleri
-        document.getElementById('clearCartBtn').addEventListener('click', clearCart);
-        document.getElementById('completeOrderBtn').addEventListener('click', showCustomerModal);
-        document.getElementById('continueShoppingBtn').addEventListener('click', continueShopping);
-        
-        // Müşteri formu
-        document.getElementById('customerForm').addEventListener('submit', (e) => {
-            e.preventDefault();
+            // Excel yükleme
+            document.getElementById('uploadExcelBtn').addEventListener('click', () => {
+                const file = document.getElementById('excelFile').files[0];
+                if (!file) {
+                    showMessage('excelMessage', 'Lütfen bir Excel dosyası seçin!', 'error');
+                    return;
+                }
+                
+                const fileName = file.name.toLowerCase();
+                if (!fileName.endsWith('.xlsx') && !fileName.endsWith('.xls') && !fileName.endsWith('.csv')) {
+                    showMessage('excelMessage', 'Lütfen geçerli bir Excel dosyası seçin!', 'error');
+                    return;
+                }
+                
+                addProductsFromExcel(file);
+            });
             
-            const customerData = {
-                name: document.getElementById('customerName').value.trim(),
-                surname: document.getElementById('customerSurname').value.trim(),
-                phone: document.getElementById('customerPhone').value.trim(),
-                email: document.getElementById('customerEmail').value.trim(),
-                address: document.getElementById('customerAddress').value.trim()
-            };
+            // Dosya seçildiğinde ismini göster
+            document.getElementById('excelFile').addEventListener('change', function() {
+                if (this.files && this.files[0]) {
+                    const fileName = this.files[0].name;
+                    const fileInputBtn = document.querySelector('.file-input-btn');
+                    fileInputBtn.textContent = `Seçilen: ${fileName}`;
+                    fileInputBtn.style.backgroundColor = '#2ecc71';
+                }
+            });
             
-            if (!customerData.name || !customerData.surname || !customerData.phone) {
-                alert('Lütfen zorunlu alanları doldurun (Ad, Soyad, Telefon)!');
-                return;
-            }
+            // Sepet işlemleri
+            document.getElementById('clearCartBtn').addEventListener('click', clearCart);
+            document.getElementById('completeOrderBtn').addEventListener('click', showCustomerModal);
+            document.getElementById('continueShoppingBtn').addEventListener('click', continueShopping);
             
-            completeOrder(customerData);
+            // Tümünü sil butonları
+            document.getElementById('deleteAllProductsBtn').addEventListener('click', deleteAllProducts);
+            document.getElementById('deleteAllCustomersBtn').addEventListener('click', deleteAllCustomers);
+            document.getElementById('deleteAllSalesBtn').addEventListener('click', deleteAllSales);
+            
+            // Müşteri formu
+            document.getElementById('customerForm').addEventListener('submit', (e) => {
+                e.preventDefault();
+                
+                const customerData = {
+                    name: document.getElementById('customerName').value.trim(),
+                    surname: document.getElementById('customerSurname').value.trim(),
+                    phone: document.getElementById('customerPhone').value.trim(),
+                    email: document.getElementById('customerEmail').value.trim(),
+                    address: document.getElementById('customerAddress').value.trim()
+                };
+                
+                if (!customerData.name || !customerData.surname || !customerData.phone) {
+                    alert('Lütfen zorunlu alanları doldurun (Ad, Soyad, Telefon)!');
+                    return;
+                }
+                
+                completeOrder(customerData);
+            });
+            
+            // Modal dışına tıklayınca kapat
+            window.addEventListener('click', (e) => {
+                if (e.target.classList.contains('customer-modal')) {
+                    closeCustomerModal();
+                    closeSaleDetailModal();
+                }
+            });
+            
+            // Sepet göstergesini başlat
+            updateCartIndicator();
         });
-        
-        // Modal dışına tıklayınca kapat
-        window.addEventListener('click', (e) => {
-            if (e.target.classList.contains('customer-modal')) {
-                closeCustomerModal();
-                closeSaleDetailModal();
-            }
-        });
-        
-        // Sepet göstergesini başlat
-        updateCartIndicator();
-    });
-</script>
+    </script>
 </body>
 </html>
