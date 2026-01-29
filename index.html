@@ -908,7 +908,7 @@
             const newProductRef = db.ref('products').push();
             const productData = {
                 name: productName.trim(),
-                price: 0, // Fiyat opsiyonel, 0 olarak kaydediyoruz
+                price: 0,
                 createdAt: new Date().toISOString(),
                 id: newProductRef.key
             };
@@ -962,7 +962,7 @@
                             const newProductRef = db.ref('products').push();
                             const productData = {
                                 name: productName.toString().trim(),
-                                price: 0, // Fiyat opsiyonel, 0 olarak kaydediyoruz
+                                price: 0,
                                 createdAt: new Date().toISOString(),
                                 id: newProductRef.key
                             };
@@ -1240,12 +1240,12 @@
                 
                 if (existingItemIndex > -1) {
                     cart[existingItemIndex].quantity += quantity;
-                    cart[existingItemIndex].price = price; // Fiyatı güncelle
+                    cart[existingItemIndex].price = price;
                 } else {
                     cart.push({
                         id: productId,
                         name: product.name,
-                        price: price, // Manuel girilen fiyat
+                        price: price,
                         quantity: quantity
                     });
                 }
@@ -1442,87 +1442,117 @@
             document.getElementById('customerId').value = '';
         }
         
-        // Siparişi tamamlama
+        // Siparişi tamamlama - DÜZELTİLDİ
         function completeOrder(customerData) {
             const saleRef = db.ref('sales').push();
             const saleId = saleRef.key;
             
+            // Sepetteki ürünlerin bilgilerini al
+            const saleProducts = cart.map(item => ({
+                id: item.id,
+                name: item.name,
+                price: item.price,
+                quantity: item.quantity
+            }));
+            
             const saleData = {
                 id: saleId,
                 customer: customerData,
-                products: cart,
+                products: saleProducts,
                 total: cart.reduce((sum, item) => sum + (item.price * item.quantity), 0),
                 createdAt: new Date().toISOString(),
                 status: 'completed'
             };
             
+            // Satışı kaydet
             saleRef.set(saleData)
                 .then(() => {
                     // Müşteriyi kaydet
-                    saveCustomer(customerData, saleData.total);
-                    
-                    // Sepeti temizle
-                    cart.forEach(item => {
-                        document.getElementById(`qty-${item.id}`).value = 0;
-                    });
-                    cart = [];
-                    updateCartDisplay();
-                    updateCartIndicator();
-                    
-                    closeCustomerModal();
-                    showMessage('singleProductMessage', 'Sipariş başarıyla tamamlandı!', 'success');
-                    
-                    // Satışlar sekmesini yenile
-                    loadSales();
-                    loadCustomers();
-                    
-                    // Ürünler sekmesine geç
-                    switchTab('products');
+                    saveCustomer(customerData, saleData.total)
+                        .then(() => {
+                            // Sepeti temizle
+                            cart.forEach(item => {
+                                document.getElementById(`qty-${item.id}`).value = 0;
+                            });
+                            cart = [];
+                            updateCartDisplay();
+                            updateCartIndicator();
+                            
+                            closeCustomerModal();
+                            showMessage('singleProductMessage', 'Sipariş başarıyla tamamlandı! Satışlar ve Müşteriler sekmesinde görüntüleyebilirsiniz.', 'success');
+                            
+                            // Satışlar ve müşteriler sekmesini yenile
+                            loadSales();
+                            loadCustomers();
+                            
+                            // Ürünler sekmesine geç
+                            switchTab('products');
+                        })
+                        .catch(error => {
+                            showMessage('singleProductMessage', 'Müşteri kaydedilirken hata oluştu: ' + error.message, 'error');
+                        });
                 })
                 .catch(error => {
-                    showMessage('singleProductMessage', 'Sipariş kaydedilirken hata oluştu: ' + error.message, 'error');
+                    showMessage('singleProductMessage', 'Satış kaydedilirken hata oluştu: ' + error.message, 'error');
                 });
         }
         
-        // Müşteriyi kaydet
+        // Müşteriyi kaydet - DÜZELTİLDİ
         function saveCustomer(customerData, saleTotal) {
-            const customerRef = db.ref('customers').child(customerData.phone);
-            
-            customerRef.once('value').then(snapshot => {
-                const existingCustomer = snapshot.val();
+            return new Promise((resolve, reject) => {
+                // Telefon numarasını temizle (boşlukları ve özel karakterleri kaldır)
+                const cleanPhone = customerData.phone.replace(/\D/g, '');
                 
-                if (existingCustomer) {
-                    // Müşteri varsa güncelle
-                    const updatedCustomer = {
-                        ...existingCustomer,
-                        totalSales: (existingCustomer.totalSales || 0) + saleTotal,
-                        saleCount: (existingCustomer.saleCount || 0) + 1,
-                        lastSale: new Date().toISOString()
-                    };
+                // Müşteri referansı oluştur
+                const customerRef = db.ref('customers').child(cleanPhone);
+                
+                customerRef.once('value').then(snapshot => {
+                    const existingCustomer = snapshot.val();
                     
-                    customerRef.set(updatedCustomer);
-                } else {
-                    // Yeni müşteri
-                    const newCustomer = {
-                        id: customerData.phone,
-                        name: customerData.name,
-                        surname: customerData.surname,
-                        phone: customerData.phone,
-                        email: customerData.email || '',
-                        address: customerData.address || '',
-                        totalSales: saleTotal,
-                        saleCount: 1,
-                        firstSale: new Date().toISOString(),
-                        lastSale: new Date().toISOString(),
-                        createdAt: new Date().toISOString()
-                    };
-                    
-                    customerRef.set(newCustomer);
-                }
+                    if (existingCustomer) {
+                        // Müşteri varsa güncelle
+                        const updatedCustomer = {
+                            ...existingCustomer,
+                            name: customerData.name,
+                            surname: customerData.surname,
+                            phone: cleanPhone,
+                            email: customerData.email || '',
+                            address: customerData.address || '',
+                            totalSales: (parseFloat(existingCustomer.totalSales) || 0) + parseFloat(saleTotal),
+                            saleCount: (parseInt(existingCustomer.saleCount) || 0) + 1,
+                            lastSale: new Date().toISOString(),
+                            updatedAt: new Date().toISOString()
+                        };
+                        
+                        customerRef.set(updatedCustomer)
+                            .then(() => resolve(updatedCustomer))
+                            .catch(error => reject(error));
+                    } else {
+                        // Yeni müşteri
+                        const newCustomer = {
+                            id: cleanPhone,
+                            name: customerData.name,
+                            surname: customerData.surname,
+                            phone: cleanPhone,
+                            email: customerData.email || '',
+                            address: customerData.address || '',
+                            totalSales: parseFloat(saleTotal),
+                            saleCount: 1,
+                            firstSale: new Date().toISOString(),
+                            lastSale: new Date().toISOString(),
+                            createdAt: new Date().toISOString()
+                        };
+                        
+                        customerRef.set(newCustomer)
+                            .then(() => resolve(newCustomer))
+                            .catch(error => reject(error));
+                    }
+                })
+                .catch(error => reject(error));
             });
         }
         
-        // Müşterileri yükle
+        // Müşterileri yükle - DÜZELTİLDİ
         function loadCustomers() {
             if (!db) {
                 document.getElementById('loadingCustomers').textContent = "Firebase bağlantısı kurulamadı!";
@@ -1551,7 +1581,9 @@
                 
                 // Müşterileri tarihe göre sırala (yeniden eskiye)
                 const sortedCustomerKeys = Object.keys(customers).sort((a, b) => {
-                    return new Date(customers[b].lastSale || customers[b].createdAt) - new Date(customers[a].lastSale || customers[a].createdAt);
+                    const dateA = new Date(customers[a].lastSale || customers[a].createdAt || 0);
+                    const dateB = new Date(customers[b].lastSale || customers[b].createdAt || 0);
+                    return dateB - dateA;
                 });
                 
                 sortedCustomerKeys.forEach(key => {
@@ -1564,20 +1596,20 @@
                     const row = document.createElement('tr');
                     row.dataset.id = key;
                     row.dataset.name = (customer.name + ' ' + customer.surname).toLowerCase();
-                    row.dataset.phone = customer.phone.toLowerCase();
+                    row.dataset.phone = (customer.phone || '').toLowerCase();
                     
                     row.innerHTML = `
-                        <td>${customer.id.substring(0, 8)}...</td>
-                        <td>${customer.name} ${customer.surname}</td>
-                        <td>${customer.phone}</td>
+                        <td>${customer.id ? customer.id.substring(0, 8) : key.substring(0, 8)}...</td>
+                        <td>${customer.name || ''} ${customer.surname || ''}</td>
+                        <td>${customer.phone || ''}</td>
                         <td>${customer.email || '-'}</td>
-                        <td>${customer.totalSales ? customer.totalSales.toFixed(2) + ' ₺' : '0 ₺'}</td>
+                        <td>${customer.totalSales ? parseFloat(customer.totalSales).toFixed(2) + ' ₺' : '0 ₺'}</td>
                         <td>${customer.lastSale ? new Date(customer.lastSale).toLocaleDateString('tr-TR') : '-'}</td>
                         <td class="action-buttons">
                             <button class="action-btn edit-btn" onclick="viewCustomerDetails('${key}')">
                                 <i class="bi bi-eye"></i> Detay
                             </button>
-                            <button class="action-btn delete-btn" onclick="deleteCustomer('${key}', '${customer.name} ${customer.surname}')">
+                            <button class="action-btn delete-btn" onclick="deleteCustomer('${key}', '${customer.name || ''} ${customer.surname || ''}')">
                                 <i class="bi bi-trash"></i> Sil
                             </button>
                         </td>
@@ -1613,8 +1645,10 @@
                 const customer = snapshot.val();
                 if (!customer) return;
                 
+                const customerPhone = customer.phone || customerId;
+                
                 // Müşterinin satışlarını getir
-                db.ref('sales').orderByChild('customer/phone').equalTo(customer.phone).once('value').then(salesSnapshot => {
+                db.ref('sales').orderByChild('customer/phone').equalTo(customerPhone).once('value').then(salesSnapshot => {
                     const sales = salesSnapshot.val();
                     let salesHtml = '';
                     
@@ -1624,9 +1658,9 @@
                         sortedSales.forEach(sale => {
                             salesHtml += `
                                 <div style="margin-bottom: 15px; padding: 15px; background: #f8f9fa; border-radius: 6px;">
-                                    <strong>Satış #${sale.id.substring(0, 8)}</strong><br>
+                                    <strong>Satış #${sale.id ? sale.id.substring(0, 8) : 'N/A'}</strong><br>
                                     Tarih: ${new Date(sale.createdAt).toLocaleString('tr-TR')}<br>
-                                    Toplam: ${sale.total.toFixed(2)} ₺<br>
+                                    Toplam: ${sale.total ? sale.total.toFixed(2) + ' ₺' : '0 ₺'}<br>
                                     <button class="action-btn edit-btn" onclick="viewSaleDetail('${sale.id}')" style="margin-top: 5px;">
                                         <i class="bi bi-list"></i> Ürünleri Gör
                                     </button>
@@ -1639,11 +1673,11 @@
                     
                     const modalContent = `
                         <div class="customer-details">
-                            <h3>${customer.name} ${customer.surname}</h3>
-                            <p><strong>Telefon:</strong> ${customer.phone}</p>
+                            <h3>${customer.name || ''} ${customer.surname || ''}</h3>
+                            <p><strong>Telefon:</strong> ${customerPhone}</p>
                             <p><strong>E-posta:</strong> ${customer.email || '-'}</p>
                             <p><strong>Adres:</strong> ${customer.address || '-'}</p>
-                            <p><strong>Toplam Satış:</strong> ${customer.totalSales ? customer.totalSales.toFixed(2) + ' ₺' : '0 ₺'}</p>
+                            <p><strong>Toplam Satış:</strong> ${customer.totalSales ? parseFloat(customer.totalSales).toFixed(2) + ' ₺' : '0 ₺'}</p>
                             <p><strong>Satış Sayısı:</strong> ${customer.saleCount || 0}</p>
                         </div>
                         <div class="customer-products">
@@ -1671,7 +1705,7 @@
             }
         }
         
-        // Satışları yükle
+        // Satışları yükle - DÜZELTİLDİ
         function loadSales() {
             if (!db) {
                 document.getElementById('loadingSales').textContent = "Firebase bağlantısı kurulamadı!";
@@ -1700,7 +1734,9 @@
                 
                 // Satışları tarihe göre sırala (yeniden eskiye)
                 const sortedSaleKeys = Object.keys(sales).sort((a, b) => {
-                    return new Date(sales[b].createdAt) - new Date(sales[a].createdAt);
+                    const dateA = new Date(sales[a].createdAt || 0);
+                    const dateB = new Date(sales[b].createdAt || 0);
+                    return dateB - dateA;
                 });
                 
                 sortedSaleKeys.forEach(key => {
@@ -1712,23 +1748,23 @@
                     
                     const row = document.createElement('tr');
                     const customerName = sale.customer ? (sale.customer.name + ' ' + sale.customer.surname).toLowerCase() : '';
-                    const saleId = sale.id.toLowerCase();
+                    const saleId = sale.id ? sale.id.toLowerCase() : key.toLowerCase();
                     
                     row.dataset.id = key;
                     row.dataset.customer = customerName;
                     row.dataset.saleId = saleId;
                     
                     row.innerHTML = `
-                        <td>${sale.id.substring(0, 8)}...</td>
+                        <td>${sale.id ? sale.id.substring(0, 8) : key.substring(0, 8)}...</td>
                         <td>${sale.customer ? sale.customer.name + ' ' + sale.customer.surname : 'Müşteri Yok'}</td>
                         <td>${sale.products ? sale.products.length : 0}</td>
-                        <td>${sale.total ? sale.total.toFixed(2) + ' ₺' : '0 ₺'}</td>
+                        <td>${sale.total ? parseFloat(sale.total).toFixed(2) + ' ₺' : '0 ₺'}</td>
                         <td>${new Date(sale.createdAt).toLocaleDateString('tr-TR')}</td>
                         <td class="action-buttons">
-                            <button class="action-btn edit-btn" onclick="viewSaleDetail('${sale.id}')">
+                            <button class="action-btn edit-btn" onclick="viewSaleDetail('${key}')">
                                 <i class="bi bi-eye"></i> Detay
                             </button>
-                            <button class="action-btn delete-btn" onclick="deleteSale('${sale.id}')">
+                            <button class="action-btn delete-btn" onclick="deleteSale('${key}')">
                                 <i class="bi bi-trash"></i> Sil
                             </button>
                         </td>
@@ -1767,10 +1803,11 @@
                 let productsHtml = '';
                 if (sale.products && sale.products.length > 0) {
                     sale.products.forEach(product => {
+                        const productTotal = (parseFloat(product.price) || 0) * (parseInt(product.quantity) || 0);
                         productsHtml += `
                             <div style="margin-bottom: 10px; padding: 10px; background: #f8f9fa; border-radius: 6px;">
-                                <strong>${product.name}</strong><br>
-                                Fiyat: ${product.price.toFixed(2)} ₺ x ${product.quantity} = ${(product.price * product.quantity).toFixed(2)} ₺
+                                <strong>${product.name || 'Ürün'}</strong><br>
+                                Fiyat: ${parseFloat(product.price || 0).toFixed(2)} ₺ x ${product.quantity || 0} = ${productTotal.toFixed(2)} ₺
                             </div>
                         `;
                     });
@@ -1780,11 +1817,11 @@
                 
                 const modalContent = `
                     <div class="customer-details">
-                        <h3>Satış #${sale.id.substring(0, 8)}</h3>
+                        <h3>Satış #${sale.id ? sale.id.substring(0, 8) : saleId.substring(0, 8)}</h3>
                         <p><strong>Müşteri:</strong> ${sale.customer ? sale.customer.name + ' ' + sale.customer.surname : 'Müşteri Yok'}</p>
                         <p><strong>Telefon:</strong> ${sale.customer ? sale.customer.phone : '-'}</p>
                         <p><strong>Tarih:</strong> ${new Date(sale.createdAt).toLocaleString('tr-TR')}</p>
-                        <p><strong>Toplam Tutar:</strong> ${sale.total ? sale.total.toFixed(2) + ' ₺' : '0 ₺'}</p>
+                        <p><strong>Toplam Tutar:</strong> ${sale.total ? parseFloat(sale.total).toFixed(2) + ' ₺' : '0 ₺'}</p>
                         <p><strong>Durum:</strong> <span class="badge badge-success">${sale.status || 'Tamamlandı'}</span></p>
                     </div>
                     <div class="customer-products">
