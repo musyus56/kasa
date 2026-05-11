@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>3D Baskı Sipariş Takip Sistemi</title>
+    <title>3D Baskı Sipariş Takip Sistemi - Firebase</title>
     <style>
         * {
             margin: 0;
@@ -20,6 +20,23 @@
         .container {
             max-width: 1400px;
             margin: 0 auto;
+        }
+
+        /* Loading overlay */
+        .loading {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            color: white;
+            font-size: 24px;
+            display: none;
         }
 
         .tabs {
@@ -96,11 +113,6 @@
             background: #28a745;
         }
 
-        button.warning {
-            background: #ffc107;
-            color: #333;
-        }
-
         table {
             width: 100%;
             border-collapse: collapse;
@@ -124,22 +136,10 @@
         }
 
         /* Durum renkleri */
-        .status-alindi {
-            background-color: #fff3cd !important;
-            border-left: 4px solid #ffc107;
-        }
-        .status-uretimde {
-            background-color: #d1ecf1 !important;
-            border-left: 4px solid #17a2b8;
-        }
-        .status-teslimehazir {
-            background-color: #f8d7da !important;
-            border-left: 4px solid #dc3545;
-        }
-        .status-teslimedildi {
-            background-color: #d4edda !important;
-            border-left: 4px solid #28a745;
-        }
+        .status-alindi { background-color: #fff3cd !important; border-left: 4px solid #ffc107; }
+        .status-uretimde { background-color: #d1ecf1 !important; border-left: 4px solid #17a2b8; }
+        .status-teslimehazir { background-color: #f8d7da !important; border-left: 4px solid #dc3545; }
+        .status-teslimedildi { background-color: #d4edda !important; border-left: 4px solid #28a745; }
 
         .action-buttons {
             display: flex;
@@ -176,39 +176,30 @@
         }
 
         @media (max-width: 768px) {
-            .two-columns {
-                grid-template-columns: 1fr;
-            }
-            table {
-                font-size: 11px;
-            }
-            th, td {
-                padding: 5px;
-            }
+            .two-columns { grid-template-columns: 1fr; }
+            table { font-size: 11px; }
+            th, td { padding: 5px; }
         }
 
-        h2 {
-            margin-bottom: 20px;
-            color: #333;
-        }
-
-        hr {
-            margin: 20px 0;
-        }
-
-        .status-select {
-            padding: 8px;
-            border-radius: 6px;
-            font-size: 13px;
+        hr { margin: 20px 0; }
+        .status-select { padding: 8px; border-radius: 6px; font-size: 13px; cursor: pointer; }
+        .connection-status {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 12px;
             font-weight: bold;
-            cursor: pointer;
-            border: 1px solid #ddd;
         }
+        .connected { background: #28a745; color: white; }
+        .disconnected { background: #dc3545; color: white; }
     </style>
 </head>
 <body>
+<div class="loading" id="loading">⏳ Yükleniyor...</div>
 <div class="container">
-    <h1>🖨️ 3D Baskı Sipariş Takip Sistemi</h1>
+    <h1>🖨️ 3D Baskı Sipariş Takip Sistemi <span style="font-size: 14px;">(Firebase Bulut)</span></h1>
     <br>
 
     <div class="tabs">
@@ -219,225 +210,200 @@
         <button class="tab-btn" data-tab="tab5">💸 Para Transferi</button>
     </div>
 
-    <!-- SEKMELER - Siparişler -->
+    <!-- Siparişler Sekmesi -->
     <div id="tab1" class="tab-content active">
         <h2>➕ Yeni Sipariş Ekle</h2>
         <div class="two-columns">
             <div>
                 <div class="form-group"><label>Sipariş Tarihi</label><input type="date" id="order_date"></div>
                 <div class="form-group"><label>Müşteri Adı</label><input type="text" id="customer_name" placeholder="Manuel gir"></div>
-                <div class="form-group"><label>Müşteri Telefon</label><input type="text" id="customer_phone" placeholder="Manuel gir"></div>
-                <div class="form-group"><label>Müşteri Adres</label><textarea id="customer_address" placeholder="Manuel gir"></textarea></div>
-                <div class="form-group"><label>Müşteri Mail</label><input type="email" id="customer_email" placeholder="Manuel gir"></div>
+                <div class="form-group"><label>Müşteri Telefon</label><input type="text" id="customer_phone"></div>
+                <div class="form-group"><label>Müşteri Adres</label><textarea id="customer_address"></textarea></div>
+                <div class="form-group"><label>Müşteri Mail</label><input type="email" id="customer_email"></div>
             </div>
             <div>
-                <div class="form-group"><label>Ürün Açıklaması</label><textarea id="product_desc" placeholder="Ne basıyor?"></textarea></div>
-                <div class="form-group"><label>Üretimi Yapan (Kim basıyor?)</label><select id="producer"><option value="">-- Seçin --</option></select></div>
-                <div class="form-group"><label>Masraf (TL)</label><input type="number" id="cost" placeholder="Ürün maliyeti"></div>
-                <div class="form-group"><label>Satış Fiyatı (TL)</label><input type="number" id="price" placeholder="Satış fiyatı"></div>
-                <div class="form-group"><label>Parayı Alan</label><select id="money_taker"><option value="">-- Seçin --</option></select></div>
-                <div class="form-group"><label>Ödeme Türü (Nasıl aldı?)</label><select id="payment_type"><option value="Nakit">Nakit</option><option value="İban">İban</option><option value="Havale">Havale</option><option value="Kredi Kartı">Kredi Kartı</option></select></div>
+                <div class="form-group"><label>Ürün Açıklaması</label><textarea id="product_desc"></textarea></div>
+                <div class="form-group"><label>Üretimi Yapan</label><select id="producer"></select></div>
+                <div class="form-group"><label>Masraf (TL)</label><input type="number" id="cost"></div>
+                <div class="form-group"><label>Satış Fiyatı (TL)</label><input type="number" id="price"></div>
+                <div class="form-group"><label>Parayı Alan</label><select id="money_taker"></select></div>
+                <div class="form-group"><label>Ödeme Türü</label><select id="payment_type"><option value="Nakit">Nakit</option><option value="İban">İban</option><option value="Havale">Havale</option></select></div>
                 <div class="form-group"><label>Durum</label><select id="status"><option value="Alındı">Alındı</option><option value="Üretimde">Üretimde</option><option value="Teslime Hazır">Teslime Hazır</option><option value="Teslim Edildi">Teslim Edildi</option></select></div>
                 <button onclick="addOrder()">✅ Sipariş Ekle</button>
             </div>
         </div>
         <hr>
         <h2>📋 Sipariş Listesi</h2>
-        <div style="overflow-x: auto;">
-            <table id="orders_table">
-                <thead>
-                    <tr>
-                        <th>ID</th><th>Tarih</th><th>Müşteri</th><th>Tel</th><th>Ürün</th>
-                        <th>Üreten</th><th>Masraf</th><th>Satış</th>
-                        <th>Parayı Alan</th><th>Nasıl Aldı?</th><th>Durum</th><th>İşlem</th>
-                    </tr>
-                </thead>
-                <tbody></tbody>
-            </table>
-        </div>
+        <div style="overflow-x: auto;"><table id="orders_table"><thead><tr><th>Tarih</th><th>Müşteri</th><th>Tel</th><th>Ürün</th><th>Üreten</th><th>Masraf</th><th>Satış</th><th>Parayı Alan</th><th>Ödeme</th><th>Durum</th><th>İşlem</th></tr></thead><tbody></tbody></table></div>
     </div>
 
-    <!-- SEKMELER - Gelir/Gider -->
+    <!-- Gelir/Gider Sekmesi -->
     <div id="tab2" class="tab-content">
         <h2>📊 Ciro & Kar Özeti</h2>
-        <div>
-            <div class="summary-card"><h3>💰 Toplam Ciro</h3><p id="total_revenue">0 TL</p></div>
-            <div class="summary-card"><h3>📉 Toplam Ürün Masrafı</h3><p id="total_product_cost">0 TL</p></div>
-            <div class="summary-card"><h3>➕ Toplam Ek Masraf</h3><p id="total_extra_cost">0 TL</p></div>
-            <div class="summary-card"><h3>💎 Net Kar</h3><p id="net_profit">0 TL</p></div>
-        </div>
+        <div><div class="summary-card"><h3>💰 Toplam Ciro</h3><p id="total_revenue">0 TL</p></div>
+        <div class="summary-card"><h3>📉 Ürün Masrafı</h3><p id="total_product_cost">0 TL</p></div>
+        <div class="summary-card"><h3>➕ Ek Masraf</h3><p id="total_extra_cost">0 TL</p></div>
+        <div class="summary-card"><h3>💎 Net Kar</h3><p id="net_profit">0 TL</p></div></div>
         <hr>
-        <h2>➕ Masraf Ekle (Filament, Kargo, Elektrik vs.)</h2>
-        <div class="two-columns">
-            <div>
-                <div class="form-group"><label>Masraf Açıklaması</label><input type="text" id="expense_desc" placeholder="Örn: Filament aldım"></div>
-                <div class="form-group"><label>Miktar (TL)</label><input type="number" id="expense_amount" placeholder="Tutar"></div>
-            </div>
-            <div>
-                <div class="form-group"><label>Parayı Ödeyen</label><select id="expense_payer"><option value="">-- Seçin --</option></select></div>
-                <div class="form-group"><label>Ödeme Türü</label><select id="expense_payment_type"><option value="Nakit">Nakit</option><option value="İban">İban</option></select></div>
-                <button onclick="addExpense()">➕ Masraf Ekle</button>
-            </div>
-        </div>
-        <hr>
-        <h2>📋 Masraf Listesi</h2>
-        <table id="expenses_table"><thead><tr><th>Tarih</th><th>Açıklama</th><th>Miktar</th><th>Ödeyen</th><th>Ödeme Türü</th><th>İşlem</th></tr></thead><tbody></tbody></table>
+        <h2>➕ Masraf Ekle</h2>
+        <div class="two-columns"><div><div class="form-group"><label>Açıklama</label><input type="text" id="expense_desc"></div><div class="form-group"><label>Miktar</label><input type="number" id="expense_amount"></div></div><div><div class="form-group"><label>Ödeyen</label><select id="expense_payer"></select></div><div class="form-group"><label>Ödeme Türü</label><select id="expense_payment_type"><option value="Nakit">Nakit</option><option value="İban">İban</option></select></div><button onclick="addExpense()">➕ Ekle</button></div></div>
+        <hr><h2>📋 Masraf Listesi</h2>
+        <table id="expenses_table"><thead><tr><th>Tarih</th><th>Açıklama</th><th>Miktar</th><th>Ödeyen</th><th>Ödeme</th><th>İşlem</th></tr></thead><tbody></tbody></table>
     </div>
 
-    <!-- SEKMELER - Kişi Bakiyeleri -->
-    <div id="tab3" class="tab-content">
-        <h2>💰 Kimde Ne Kadar Para Var?</h2>
-        <table id="balances_table">
-            <thead><tr><th>Kişi</th><th>Nakit (TL)</th><th>İban (TL)</th><th>Toplam (TL)</th></tr></thead>
-            <tbody></tbody>
-        </table>
+    <!-- Kişi Bakiyeleri -->
+    <div id="tab3" class="tab-content"><h2>💰 Kimde Ne Kadar Var?</h2>
+        <table id="balances_table"><thead><tr><th>Kişi</th><th>Nakit</th><th>İban</th><th>Toplam</th></tr></thead><tbody></tbody></table>
     </div>
 
-    <!-- SEKMELER - Kişi Yönetimi -->
-    <div id="tab4" class="tab-content">
-        <h2>👥 Çalışanlar ve Diğer Kişiler</h2>
-        <div class="two-columns">
-            <div>
-                <div class="form-group"><label>Kişi Adı</label><input type="text" id="person_name" placeholder="Örn: Tuğçe, Mustafa, Ahmet Usta"></div>
-                <div class="form-group"><label>Rol</label><input type="text" id="person_role" placeholder="Çalışan / Dış Baskıcı / Kasa"></div>
-                <button onclick="addPerson()">➕ Kişi Ekle</button>
-            </div>
-            <div>
-                <h3>📋 Kayıtlı Kişiler</h3>
-                <table id="persons_table"><thead>运转<th>Ad</th><th>Rol</th><th>İşlem</th> </tr></thead><tbody></tbody></table>
-            </div>
-        </div>
+    <!-- Kişi Yönetimi -->
+    <div id="tab4" class="tab-content"><h2>👥 Kişi Yönetimi</h2>
+        <div class="two-columns"><div><div class="form-group"><label>Kişi Adı</label><input type="text" id="person_name"></div><div class="form-group"><label>Rol</label><input type="text" id="person_role"></div><button onclick="addPerson()">➕ Ekle</button></div><div><h3>📋 Kayıtlı Kişiler</h3><table id="persons_table"><thead><tr><th>Ad</th><th>Rol</th><th>İşlem</th></tr></thead><tbody></tbody></table></div></div>
     </div>
 
-    <!-- SEKMELER - Para Transferi -->
-    <div id="tab5" class="tab-content">
-        <h2>💸 Para Transferi (Kişiden Kişiye)</h2>
-        <div class="two-columns">
-            <div>
-                <div class="form-group"><label>Gönderen Kişi</label><select id="transfer_from"><option value="">-- Seçin --</option></select></div>
-                <div class="form-group"><label>Alan Kişi</label><select id="transfer_to"><option value="">-- Seçin --</option></select></div>
-                <div class="form-group"><label>Tutar (TL)</label><input type="number" id="transfer_amount" placeholder="Miktar"></div>
-                <div class="form-group"><label>Açıklama</label><input type="text" id="transfer_desc" placeholder="Örn: Nakit ödeme, borç"></div>
-            </div>
-            <div>
-                <div class="form-group"><label>Transfer Türü</label><select id="transfer_type"><option value="Nakit">Nakit → Nakit</option><option value="NakitToIban">Nakit → İban</option><option value="IbanToNakit">İban → Nakit</option><option value="Iban">İban → İban</option></select></div>
-                <button onclick="addTransfer()" style="margin-top: 30px;">💸 Transfer Yap</button>
-            </div>
-        </div>
-        <hr>
-        <h2>📋 Transfer Geçmişi</h2>
-        <table id="transfers_table">
-            <thead><tr><th>Tarih</th><th>Gönderen</th><th>Alan</th><th>Tutar</th><th>Tür</th><th>Açıklama</th><th>İşlem</th> </tr></thead>
-            <tbody></tbody>
-        </table>
+    <!-- Para Transferi -->
+    <div id="tab5" class="tab-content"><h2>💸 Para Transferi</h2>
+        <div class="two-columns"><div><div class="form-group"><label>Gönderen</label><select id="transfer_from"></select></div><div class="form-group"><label>Alan</label><select id="transfer_to"></select></div><div class="form-group"><label>Tutar</label><input type="number" id="transfer_amount"></div></div><div><div class="form-group"><label>Transfer Türü</label><select id="transfer_type"><option value="Nakit">Nakit→Nakit</option><option value="NakitToIban">Nakit→İban</option><option value="IbanToNakit">İban→Nakit</option><option value="Iban">İban→İban</option></select></div><div class="form-group"><label>Açıklama</label><input type="text" id="transfer_desc"></div><button onclick="addTransfer()">💸 Transfer Yap</button></div></div>
+        <hr><h2>📋 Transfer Geçmişi</h2>
+        <table id="transfers_table"><thead><tr><th>Tarih</th><th>Gönderen</th><th>Alan</th><th>Tutar</th><th>Tür</th><th>Açıklama</th><th>İşlem</th></tr></thead><tbody></tbody></table>
     </div>
 </div>
+<div id="connectionStatus" class="connection-status connected">✅ Firebase Bağlı</div>
 
-<script>
-    // VERİ DEPOLAMA
-    let orders = JSON.parse(localStorage.getItem('orders')) || [];
-    let persons = JSON.parse(localStorage.getItem('persons')) || [];
-    let expenses = JSON.parse(localStorage.getItem('expenses')) || [];
-    let transfers = JSON.parse(localStorage.getItem('transfers')) || [];
-
-    // BAŞLANGIÇ KİŞİLERİ
-    if(persons.length === 0){
-        persons.push({id: Date.now()+1, name: "Tuğçe", role: "Çalışan"});
-        persons.push({id: Date.now()+2, name: "Mustafa", role: "Çalışan"});
-        persons.push({id: Date.now()+3, name: "Şirket Kasası", role: "Kasa"});
-        savePersons();
-    }
-
-    // ÖRNEK SİPARİŞ
-    if(orders.length === 0){
-        orders.push({
-            id: Date.now(),
-            date: new Date().toISOString().slice(0,10),
-            customer_name: "Ali Test",
-            customer_phone: "0555 123 4567",
-            customer_address: "Test Adres",
-            customer_email: "test@test.com",
-            product_desc: "Test Ürün",
-            producer: "Tuğçe",
-            cost: 50,
-            price: 150,
-            money_taker: "Tuğçe",
-            payment_type: "Nakit",
-            status: "Alındı"
-        });
-        saveOrders();
-    }
-
-    function saveOrders(){ localStorage.setItem('orders', JSON.stringify(orders)); }
-    function savePersons(){ localStorage.setItem('persons', JSON.stringify(persons)); }
-    function saveExpenses(){ localStorage.setItem('expenses', JSON.stringify(expenses)); }
-    function saveTransfers(){ localStorage.setItem('transfers', JSON.stringify(transfers)); }
-
-    function updateAllDropdowns(){
-        let producerSelect = document.getElementById('producer');
-        let moneyTakerSelect = document.getElementById('money_taker');
-        let expensePayerSelect = document.getElementById('expense_payer');
-        let transferFrom = document.getElementById('transfer_from');
-        let transferTo = document.getElementById('transfer_to');
-        
-        let options = '<option value="">-- Seçin --</option>';
-        persons.forEach(p => { options += `<option value="${p.name}">${p.name}</option>`; });
-        
-        if(producerSelect) producerSelect.innerHTML = options;
-        if(moneyTakerSelect) moneyTakerSelect.innerHTML = options;
-        if(expensePayerSelect) expensePayerSelect.innerHTML = options;
-        if(transferFrom) transferFrom.innerHTML = options;
-        if(transferTo) transferTo.innerHTML = options;
-    }
-
-    // PARA TRANSFERİ
-    window.addTransfer = function(){
-        let from = document.getElementById('transfer_from').value;
-        let to = document.getElementById('transfer_to').value;
-        let amount = parseFloat(document.getElementById('transfer_amount').value);
-        let desc = document.getElementById('transfer_desc').value;
-        let type = document.getElementById('transfer_type').value;
-        
-        if(!from || !to || amount <= 0){
-            alert("Lütfen gönderen, alan ve geçerli bir tutar girin!");
-            return;
+<!-- Firebase SDK -->
+<script type="importmap">
+    {
+        "imports": {
+            "firebase/app": "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js",
+            "firebase/database": "https://www.gstatic.com/firebasejs/11.0.2/firebase-database.js"
         }
-        if(from === to){
-            alert("Gönderen ve alan kişi aynı olamaz!");
-            return;
-        }
-        
-        let transfer = {
-            id: Date.now(),
-            date: new Date().toISOString().slice(0,10),
-            from: from,
-            to: to,
-            amount: amount,
-            type: type,
-            desc: desc
-        };
-        
-        transfers.push(transfer);
-        saveTransfers();
-        renderTransfers();
-        renderBalances();
-        document.getElementById('transfer_amount').value = '';
-        document.getElementById('transfer_desc').value = '';
+    }
+</script>
+
+<script type="module">
+    import { initializeApp } from "firebase/app";
+    import { getDatabase, ref, set, onValue, push, remove, update } from "firebase/database";
+
+    // Firebase Config
+    const firebaseConfig = {
+        apiKey: "AIzaSyDbqeJi57YYm6TZ8AqimOQ9DH_W7r8oqag",
+        authDomain: "para-82f3c.firebaseapp.com",
+        databaseURL: "https://para-82f3c-default-rtdb.firebaseio.com",
+        projectId: "para-82f3c",
+        storageBucket: "para-82f3c.firebasestorage.app",
+        messagingSenderId: "116491467975",
+        appId: "1:116491467975:web:3eb33b90b1fd49e8fb12e2"
     };
+
+    // Firebase Başlat
+    const app = initializeApp(firebaseConfig);
+    const database = getDatabase(app);
     
-    window.deleteTransfer = function(id){
-        if(confirm('Transfer silinsin mi?')){
-            transfers = transfers.filter(t => t.id != id);
-            saveTransfers();
+    // Bağlantı durumu
+    const connectedRef = ref(database, '.info/connected');
+    onValue(connectedRef, (snap) => {
+        const statusDiv = document.getElementById('connectionStatus');
+        if(snap.val() === true) {
+            statusDiv.className = "connection-status connected";
+            statusDiv.innerHTML = "✅ Firebase Bağlı";
+        } else {
+            statusDiv.className = "connection-status disconnected";
+            statusDiv.innerHTML = "❌ Bağlantı Kesildi";
+        }
+    });
+
+    // Veri referansları
+    const ordersRef = ref(database, 'orders');
+    const personsRef = ref(database, 'persons');
+    const expensesRef = ref(database, 'expenses');
+    const transfersRef = ref(database, 'transfers');
+
+    let persons = [];
+    let orders = [];
+    let expenses = [];
+    let transfers = [];
+
+    function showLoading(show) {
+        document.getElementById('loading').style.display = show ? 'flex' : 'none';
+    }
+
+    // Başlangıç kişileri
+    function initPersons() {
+        onValue(personsRef, (snapshot) => {
+            persons = [];
+            snapshot.forEach((child) => {
+                persons.push({ id: child.key, ...child.val() });
+            });
+            if(persons.length === 0) {
+                // Varsayılan kişileri ekle
+                const defaultPersons = [
+                    { name: "Tuğçe", role: "Çalışan" },
+                    { name: "Mustafa", role: "Çalışan" },
+                    { name: "Şirket Kasası", role: "Kasa" }
+                ];
+                defaultPersons.forEach(p => {
+                    const newRef = push(personsRef);
+                    set(newRef, p);
+                });
+            }
+            updateAllDropdowns();
+            renderPersons();
+            renderBalances();
+        });
+    }
+
+    // Siparişleri dinle
+    function initOrders() {
+        onValue(ordersRef, (snapshot) => {
+            orders = [];
+            snapshot.forEach((child) => {
+                orders.push({ id: child.key, ...child.val() });
+            });
+            renderOrders();
+            updateSummary();
+            renderBalances();
+        });
+    }
+
+    // Masrafları dinle
+    function initExpenses() {
+        onValue(expensesRef, (snapshot) => {
+            expenses = [];
+            snapshot.forEach((child) => {
+                expenses.push({ id: child.key, ...child.val() });
+            });
+            renderExpenses();
+            updateSummary();
+            renderBalances();
+        });
+    }
+
+    // Transferleri dinle
+    function initTransfers() {
+        onValue(transfersRef, (snapshot) => {
+            transfers = [];
+            snapshot.forEach((child) => {
+                transfers.push({ id: child.key, ...child.val() });
+            });
             renderTransfers();
             renderBalances();
-        }
-    };
+        });
+    }
+
+    function updateAllDropdowns() {
+        const selects = ['producer', 'money_taker', 'expense_payer', 'transfer_from', 'transfer_to'];
+        selects.forEach(id => {
+            const select = document.getElementById(id);
+            if(select) {
+                select.innerHTML = '<option value="">-- Seçin --</option>' + 
+                    persons.map(p => `<option value="${p.name}">${p.name}</option>`).join('');
+            }
+        });
+    }
 
     // SİPARİŞ EKLE
-    window.addOrder = function(){
-        let order = {
-            id: Date.now(),
+    window.addOrder = async function() {
+        const order = {
             date: document.getElementById('order_date').value,
             customer_name: document.getElementById('customer_name').value,
             customer_phone: document.getElementById('customer_phone').value,
@@ -449,31 +415,19 @@
             price: parseFloat(document.getElementById('price').value) || 0,
             money_taker: document.getElementById('money_taker').value,
             payment_type: document.getElementById('payment_type').value,
-            status: document.getElementById('status').value
+            status: document.getElementById('status').value,
+            timestamp: Date.now()
         };
         
-        if(!order.customer_name){
-            alert("Lütfen Müşteri Adını girin!");
-            return;
-        }
-        if(!order.producer){
-            alert("Lütfen Üretimi Yapan kişiyi seçin!");
-            return;
-        }
-        if(!order.money_taker){
-            alert("Lütfen Parayı Alan kişiyi seçin!");
-            return;
-        }
+        if(!order.customer_name) { alert("Müşteri adı girin!"); return; }
+        if(!order.producer) { alert("Üreten kişiyi seçin!"); return; }
+        if(!order.money_taker) { alert("Parayı alan kişiyi seçin!"); return; }
         
-        orders.push(order);
-        saveOrders();
-        renderOrders();
-        clearOrderForm();
-        renderBalances();
-        updateSummary();
-    };
-
-    function clearOrderForm(){
+        showLoading(true);
+        const newRef = push(ordersRef);
+        await set(newRef, order);
+        showLoading(false);
+        
         document.getElementById('order_date').value = new Date().toISOString().slice(0,10);
         document.getElementById('customer_name').value = '';
         document.getElementById('customer_phone').value = '';
@@ -482,318 +436,280 @@
         document.getElementById('product_desc').value = '';
         document.getElementById('cost').value = '';
         document.getElementById('price').value = '';
-    }
-
-    window.deleteOrder = function(id){
-        if(confirm('Sipariş silinsin mi?')){
-            orders = orders.filter(o => o.id != id);
-            saveOrders();
-            renderOrders();
-            renderBalances();
-            updateSummary();
-        }
     };
-    
-    window.updateStatus = function(id, newStatus){
-        let order = orders.find(o => o.id == id);
-        if(order){
-            order.status = newStatus;
-            saveOrders();
-            renderOrders();
-            renderBalances();
-            updateSummary();
+
+    window.deleteOrder = async function(id) {
+        if(confirm('Sipariş silinsin mi?')) {
+            showLoading(true);
+            await remove(ref(database, `orders/${id}`));
+            showLoading(false);
         }
     };
 
-    window.editFullOrder = function(id){
-        let order = orders.find(o => o.id == id);
-        if(order){
-            let newCustomer = prompt("Müşteri Adı:", order.customer_name);
-            let newProduct = prompt("Ürün Açıklaması:", order.product_desc);
-            let newCost = prompt("Masraf (TL):", order.cost);
-            let newPrice = prompt("Satış Fiyatı (TL):", order.price);
-            let newProducer = prompt("Üreten Kişi:", order.producer);
-            let newMoneyTaker = prompt("Parayı Alan:", order.money_taker);
-            let newPaymentType = prompt("Ödeme Türü (Nakit/İban/Havale/Kredi Kartı):", order.payment_type);
-            
-            if(newCustomer) order.customer_name = newCustomer;
-            if(newProduct) order.product_desc = newProduct;
-            if(newCost && !isNaN(newCost)) order.cost = parseFloat(newCost);
-            if(newPrice && !isNaN(newPrice)) order.price = parseFloat(newPrice);
-            if(newProducer) order.producer = newProducer;
-            if(newMoneyTaker) order.money_taker = newMoneyTaker;
-            if(newPaymentType) order.payment_type = newPaymentType;
-            
-            saveOrders();
-            renderOrders();
-            renderBalances();
-            updateSummary();
+    window.updateStatus = async function(id, newStatus) {
+        await update(ref(database, `orders/${id}`), { status: newStatus });
+    };
+
+    window.editFullOrder = async function(id) {
+        const order = orders.find(o => o.id == id);
+        if(order) {
+            const newCustomer = prompt("Müşteri Adı:", order.customer_name);
+            const newProduct = prompt("Ürün:", order.product_desc);
+            const newCost = prompt("Masraf:", order.cost);
+            const newPrice = prompt("Satış:", order.price);
+            if(newCustomer) await update(ref(database, `orders/${id}`), { customer_name: newCustomer });
+            if(newProduct) await update(ref(database, `orders/${id}`), { product_desc: newProduct });
+            if(newCost && !isNaN(newCost)) await update(ref(database, `orders/${id}`), { cost: parseFloat(newCost) });
+            if(newPrice && !isNaN(newPrice)) await update(ref(database, `orders/${id}`), { price: parseFloat(newPrice) });
         }
     };
 
-    window.addExpense = function(){
-        let expense = {
-            id: Date.now(),
+    // MASRAF EKLE
+    window.addExpense = async function() {
+        const expense = {
             date: new Date().toISOString().slice(0,10),
             desc: document.getElementById('expense_desc').value,
             amount: parseFloat(document.getElementById('expense_amount').value) || 0,
             payer: document.getElementById('expense_payer').value,
-            payment_type: document.getElementById('expense_payment_type').value
+            payment_type: document.getElementById('expense_payment_type').value,
+            timestamp: Date.now()
         };
-        if(!expense.desc || expense.amount <= 0 || !expense.payer){
-            alert("Lütfen açıklama, tutar ve ödeyen kişiyi girin!");
+        if(!expense.desc || expense.amount <= 0 || !expense.payer) {
+            alert("Tüm alanları doldurun!");
             return;
         }
-        expenses.push(expense);
-        saveExpenses();
-        renderExpenses();
-        renderBalances();
-        updateSummary();
+        showLoading(true);
+        const newRef = push(expensesRef);
+        await set(newRef, expense);
+        showLoading(false);
         document.getElementById('expense_desc').value = '';
         document.getElementById('expense_amount').value = '';
     };
-    
-    window.deleteExpense = function(id){
-        if(confirm('Masraf silinsin mi?')){
-            expenses = expenses.filter(e => e.id != id);
-            saveExpenses();
-            renderExpenses();
-            renderBalances();
-            updateSummary();
+
+    window.deleteExpense = async function(id) {
+        if(confirm('Masraf silinsin mi?')) {
+            showLoading(true);
+            await remove(ref(database, `expenses/${id}`));
+            showLoading(false);
         }
     };
 
-    window.addPerson = function(){
-        let name = document.getElementById('person_name').value.trim();
-        let role = document.getElementById('person_role').value.trim();
-        if(!name){
-            alert("Kişi adı girin!");
-            return;
-        }
-        persons.push({id: Date.now(), name: name, role: role});
-        savePersons();
-        renderPersons();
-        updateAllDropdowns();
-        renderBalances();
+    // KİŞİ EKLE
+    window.addPerson = async function() {
+        const name = document.getElementById('person_name').value.trim();
+        const role = document.getElementById('person_role').value.trim();
+        if(!name) { alert("İsim girin!"); return; }
+        showLoading(true);
+        const newRef = push(personsRef);
+        await set(newRef, { name, role });
+        showLoading(false);
         document.getElementById('person_name').value = '';
         document.getElementById('person_role').value = '';
     };
-    
-    window.deletePerson = function(id){
-        if(confirm('Bu kişi silinsin mi?')){
-            persons = persons.filter(p => p.id != id);
-            savePersons();
-            renderPersons();
-            updateAllDropdowns();
-            renderOrders();
-            renderBalances();
+
+    window.deletePerson = async function(id) {
+        if(confirm('Kişi silinsin mi?')) {
+            showLoading(true);
+            await remove(ref(database, `persons/${id}`));
+            showLoading(false);
+        }
+    };
+
+    // PARA TRANSFERİ
+    window.addTransfer = async function() {
+        const from = document.getElementById('transfer_from').value;
+        const to = document.getElementById('transfer_to').value;
+        const amount = parseFloat(document.getElementById('transfer_amount').value);
+        const type = document.getElementById('transfer_type').value;
+        const desc = document.getElementById('transfer_desc').value;
+        
+        if(!from || !to || amount <= 0) { alert("Geçerli bilgiler girin!"); return; }
+        if(from === to) { alert("Aynı kişiye transfer olmaz!"); return; }
+        
+        const transfer = {
+            date: new Date().toISOString().slice(0,10),
+            from, to, amount, type, desc,
+            timestamp: Date.now()
+        };
+        showLoading(true);
+        const newRef = push(transfersRef);
+        await set(newRef, transfer);
+        showLoading(false);
+        document.getElementById('transfer_amount').value = '';
+        document.getElementById('transfer_desc').value = '';
+    };
+
+    window.deleteTransfer = async function(id) {
+        if(confirm('Transfer silinsin mi?')) {
+            showLoading(true);
+            await remove(ref(database, `transfers/${id}`));
+            showLoading(false);
         }
     };
 
     // RENDER FONKSİYONLARI
-    function renderOrders(){
-        let tbody = document.querySelector('#orders_table tbody');
+    function renderOrders() {
+        const tbody = document.querySelector('#orders_table tbody');
         if(!tbody) return;
         tbody.innerHTML = '';
-        
         orders.forEach(order => {
-            let row = tbody.insertRow();
-            
-            // Duruma göre sınıf ekle
+            const row = tbody.insertRow();
             let statusClass = '';
             if(order.status === 'Alındı') statusClass = 'status-alindi';
             else if(order.status === 'Üretimde') statusClass = 'status-uretimde';
             else if(order.status === 'Teslime Hazır') statusClass = 'status-teslimehazir';
             else if(order.status === 'Teslim Edildi') statusClass = 'status-teslimedildi';
-            
             row.className = statusClass;
             
-            row.insertCell(0).innerText = order.id;
-            row.insertCell(1).innerText = order.date;
-            row.insertCell(2).innerText = order.customer_name;
-            row.insertCell(3).innerText = order.customer_phone;
-            row.insertCell(4).innerText = order.product_desc.substring(0,30);
-            row.insertCell(5).innerText = order.producer;
-            row.insertCell(6).innerText = order.cost + " TL";
-            row.insertCell(7).innerText = order.price + " TL";
-            row.insertCell(8).innerText = order.money_taker;
-            row.insertCell(9).innerText = order.payment_type;
+            row.insertCell(0).innerText = order.date;
+            row.insertCell(1).innerText = order.customer_name;
+            row.insertCell(2).innerText = order.customer_phone;
+            row.insertCell(3).innerText = order.product_desc?.substring(0,30) || '';
+            row.insertCell(4).innerText = order.producer;
+            row.insertCell(5).innerText = order.cost + " TL";
+            row.insertCell(6).innerText = order.price + " TL";
+            row.insertCell(7).innerText = order.money_taker;
+            row.insertCell(8).innerText = order.payment_type;
             
-            // Durum dropdown'ı
-            let statusCell = row.insertCell(10);
-            let statusSelect = document.createElement('select');
+            const statusCell = row.insertCell(9);
+            const statusSelect = document.createElement('select');
             statusSelect.className = 'status-select';
-            let statuses = ['Alındı', 'Üretimde', 'Teslime Hazır', 'Teslim Edildi'];
-            statuses.forEach(s => {
-                let option = document.createElement('option');
+            ['Alındı', 'Üretimde', 'Teslime Hazır', 'Teslim Edildi'].forEach(s => {
+                const option = document.createElement('option');
                 option.value = s;
                 option.text = s;
                 if(order.status === s) option.selected = true;
                 statusSelect.appendChild(option);
             });
-            statusSelect.onchange = function() { updateStatus(order.id, this.value); };
+            statusSelect.onchange = function() { window.updateStatus(order.id, this.value); };
             statusCell.appendChild(statusSelect);
             
-            // İşlem butonları
-            let actionCell = row.insertCell(11);
+            const actionCell = row.insertCell(10);
             actionCell.className = 'action-buttons';
-            actionCell.innerHTML = `
-                <button onclick="editFullOrder(${order.id})">✏️ Düzenle</button>
-                <button class="danger" onclick="deleteOrder(${order.id})">🗑️ Sil</button>
-            `;
+            actionCell.innerHTML = `<button onclick="editFullOrder('${order.id}')">✏️ Düzenle</button><button class="danger" onclick="deleteOrder('${order.id}')">🗑️ Sil</button>`;
         });
     }
-    
-    function renderExpenses(){
-        let tbody = document.querySelector('#expenses_table tbody');
+
+    function renderExpenses() {
+        const tbody = document.querySelector('#expenses_table tbody');
         if(!tbody) return;
         tbody.innerHTML = '';
         expenses.forEach(exp => {
-            let row = tbody.insertRow();
+            const row = tbody.insertRow();
             row.insertCell(0).innerText = exp.date;
             row.insertCell(1).innerText = exp.desc;
             row.insertCell(2).innerText = exp.amount + " TL";
             row.insertCell(3).innerText = exp.payer;
             row.insertCell(4).innerText = exp.payment_type;
-            let actionCell = row.insertCell(5);
-            actionCell.innerHTML = `<button class="danger" onclick="deleteExpense(${exp.id})">🗑️ Sil</button>`;
+            row.insertCell(5).innerHTML = `<button class="danger" onclick="deleteExpense('${exp.id}')">🗑️ Sil</button>`;
         });
     }
-    
-    function renderPersons(){
-        let tbody = document.querySelector('#persons_table tbody');
+
+    function renderPersons() {
+        const tbody = document.querySelector('#persons_table tbody');
         if(!tbody) return;
         tbody.innerHTML = '';
         persons.forEach(person => {
-            let row = tbody.insertRow();
+            const row = tbody.insertRow();
             row.insertCell(0).innerText = person.name;
             row.insertCell(1).innerText = person.role;
-            let actionCell = row.insertCell(2);
-            actionCell.innerHTML = `<button class="danger" onclick="deletePerson(${person.id})">🗑️ Sil</button>`;
+            row.insertCell(2).innerHTML = `<button class="danger" onclick="deletePerson('${person.id}')">🗑️ Sil</button>`;
         });
     }
-    
-    function renderTransfers(){
-        let tbody = document.querySelector('#transfers_table tbody');
+
+    function renderTransfers() {
+        const tbody = document.querySelector('#transfers_table tbody');
         if(!tbody) return;
         tbody.innerHTML = '';
-        transfers.forEach(transfer => {
-            let row = tbody.insertRow();
-            row.insertCell(0).innerText = transfer.date;
-            row.insertCell(1).innerText = transfer.from;
-            row.insertCell(2).innerText = transfer.to;
-            row.insertCell(3).innerText = transfer.amount + " TL";
-            row.insertCell(4).innerText = transfer.type;
-            row.insertCell(5).innerText = transfer.desc;
-            let actionCell = row.insertCell(6);
-            actionCell.innerHTML = `<button class="danger" onclick="deleteTransfer(${transfer.id})">🗑️ Sil</button>`;
+        transfers.forEach(t => {
+            const row = tbody.insertRow();
+            row.insertCell(0).innerText = t.date;
+            row.insertCell(1).innerText = t.from;
+            row.insertCell(2).innerText = t.to;
+            row.insertCell(3).innerText = t.amount + " TL";
+            row.insertCell(4).innerText = t.type;
+            row.insertCell(5).innerText = t.desc;
+            row.insertCell(6).innerHTML = `<button class="danger" onclick="deleteTransfer('${t.id}')">🗑️ Sil</button>`;
         });
     }
-    
-    function renderBalances(){
-        let balanceMap = new Map();
-        persons.forEach(p => { balanceMap.set(p.name, {cash:0, iban:0}); });
+
+    function renderBalances() {
+        const balanceMap = new Map();
+        persons.forEach(p => balanceMap.set(p.name, { cash: 0, iban: 0 }));
         
-        // Siparişlerden gelen gelirler
         orders.forEach(order => {
-            let bal = balanceMap.get(order.money_taker);
-            if(bal){
+            const bal = balanceMap.get(order.money_taker);
+            if(bal) {
                 if(order.payment_type === 'Nakit') bal.cash += order.price;
                 else bal.iban += order.price;
-                balanceMap.set(order.money_taker, bal);
             }
         });
         
-        // Masraflar
         expenses.forEach(exp => {
-            let bal = balanceMap.get(exp.payer);
-            if(bal){
+            const bal = balanceMap.get(exp.payer);
+            if(bal) {
                 if(exp.payment_type === 'Nakit') bal.cash -= exp.amount;
                 else bal.iban -= exp.amount;
-                balanceMap.set(exp.payer, bal);
             }
         });
         
-        // Transferler
-        transfers.forEach(transfer => {
-            let fromBal = balanceMap.get(transfer.from);
-            let toBal = balanceMap.get(transfer.to);
-            if(fromBal && toBal){
-                let amount = transfer.amount;
-                if(transfer.type === 'Nakit'){
-                    fromBal.cash -= amount;
-                    toBal.cash += amount;
-                } else if(transfer.type === 'NakitToIban'){
-                    fromBal.cash -= amount;
-                    toBal.iban += amount;
-                } else if(transfer.type === 'IbanToNakit'){
-                    fromBal.iban -= amount;
-                    toBal.cash += amount;
-                } else if(transfer.type === 'Iban'){
-                    fromBal.iban -= amount;
-                    toBal.iban += amount;
-                }
-                balanceMap.set(transfer.from, fromBal);
-                balanceMap.set(transfer.to, toBal);
+        transfers.forEach(t => {
+            const fromBal = balanceMap.get(t.from);
+            const toBal = balanceMap.get(t.to);
+            if(fromBal && toBal) {
+                const amount = t.amount;
+                if(t.type === 'Nakit') { fromBal.cash -= amount; toBal.cash += amount; }
+                else if(t.type === 'NakitToIban') { fromBal.cash -= amount; toBal.iban += amount; }
+                else if(t.type === 'IbanToNakit') { fromBal.iban -= amount; toBal.cash += amount; }
+                else if(t.type === 'Iban') { fromBal.iban -= amount; toBal.iban += amount; }
             }
         });
         
-        let tbody = document.querySelector('#balances_table tbody');
+        const tbody = document.querySelector('#balances_table tbody');
         if(!tbody) return;
         tbody.innerHTML = '';
-        for(let [name, bal] of balanceMap.entries()){
-            let row = tbody.insertRow();
+        for(let [name, bal] of balanceMap) {
+            const row = tbody.insertRow();
             row.insertCell(0).innerText = name;
             row.insertCell(1).innerText = bal.cash.toFixed(2) + " TL";
             row.insertCell(2).innerText = bal.iban.toFixed(2) + " TL";
             row.insertCell(3).innerText = (bal.cash+bal.iban).toFixed(2) + " TL";
         }
     }
-    
-    function updateSummary(){
-        let totalRevenue = orders.reduce((sum,o)=> sum + o.price,0);
-        let totalProductCost = orders.reduce((sum,o)=> sum + o.cost,0);
-        let totalExtraCost = expenses.reduce((sum,e)=> sum + e.amount,0);
-        let netProfit = totalRevenue - totalProductCost - totalExtraCost;
+
+    function updateSummary() {
+        const totalRevenue = orders.reduce((sum,o) => sum + (o.price || 0), 0);
+        const totalProductCost = orders.reduce((sum,o) => sum + (o.cost || 0), 0);
+        const totalExtraCost = expenses.reduce((sum,e) => sum + (e.amount || 0), 0);
         document.getElementById('total_revenue').innerHTML = totalRevenue.toFixed(2) + " TL";
         document.getElementById('total_product_cost').innerHTML = totalProductCost.toFixed(2) + " TL";
         document.getElementById('total_extra_cost').innerHTML = totalExtraCost.toFixed(2) + " TL";
-        document.getElementById('net_profit').innerHTML = netProfit.toFixed(2) + " TL";
+        document.getElementById('net_profit').innerHTML = (totalRevenue - totalProductCost - totalExtraCost).toFixed(2) + " TL";
     }
-    
-    function initTabs(){
+
+    // Sekme geçişleri
+    function initTabs() {
         document.querySelectorAll('.tab-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
+            btn.addEventListener('click', () => {
                 document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
                 document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
                 document.getElementById(btn.dataset.tab).classList.add('active');
                 if(btn.dataset.tab === 'tab3') renderBalances();
                 if(btn.dataset.tab === 'tab4') renderPersons();
-                if(btn.dataset.tab === 'tab5') {
-                    renderTransfers();
-                    updateAllDropdowns();
-                }
-                if(btn.dataset.tab === 'tab2') {
-                    renderExpenses();
-                    updateSummary();
-                }
-                if(btn.dataset.tab === 'tab1') renderOrders();
+                if(btn.dataset.tab === 'tab5') renderTransfers();
             });
         });
     }
-    
+
+    // Başlat
     document.addEventListener('DOMContentLoaded', () => {
         initTabs();
-        updateAllDropdowns();
-        renderOrders();
-        renderPersons();
-        renderExpenses();
-        renderTransfers();
-        renderBalances();
-        updateSummary();
-        let today = new Date().toISOString().slice(0,10);
-        if(document.getElementById('order_date')) document.getElementById('order_date').value = today;
+        initPersons();
+        initOrders();
+        initExpenses();
+        initTransfers();
+        document.getElementById('order_date').value = new Date().toISOString().slice(0,10);
     });
 </script>
 </body>
