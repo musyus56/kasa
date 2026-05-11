@@ -209,6 +209,11 @@
             background: #d4edda;
             border-left: 4px solid #28a745;
         }
+
+        .fixed-person {
+            background-color: #e7f3ff;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
@@ -238,11 +243,11 @@
             </div>
             <div>
                 <div class="form-group"><label>Ürün Açıklaması</label><textarea id="product_desc"></textarea></div>
-                <div class="form-group"><label>Üretimi Yapan</label><select id="producer"></select></div>
+                <div class="form-group"><label>Üretimi Yapan (Kim basıyor?)</label><select id="producer"></select></div>
                 <div class="form-group"><label>Masraf (TL)</label><input type="number" id="cost"></div>
                 <div class="form-group"><label>Satış Fiyatı (TL)</label><input type="number" id="price"></div>
                 <div class="form-group"><label>Parayı Alan</label><select id="money_taker"></select></div>
-                <div class="form-group"><label>Ödeme Türü</label><select id="payment_type"><option value="Nakit">Nakit</option><option value="İban">İban</option><option value="Havale">Havale</option></select></div>
+                <div class="form-group"><label>Ödeme Türü (Nasıl aldı?)</label><select id="payment_type"><option value="Nakit">Nakit</option><option value="İban">İban</option><option value="Havale">Havale</option></select></div>
                 <div class="form-group"><label>Durum</label><select id="status"><option value="Alındı">Alındı</option><option value="Üretimde">Üretimde</option><option value="Teslime Hazır">Teslime Hazır</option><option value="Teslim Edildi">Teslim Edildi</option></select></div>
                 <button onclick="addOrder()">✅ Sipariş Ekle</button>
             </div>
@@ -252,7 +257,7 @@
         <div style="overflow-x: auto;"><table id="orders_table"><thead><tr><th>Tarih</th><th>Müşteri</th><th>Tel</th><th>Ürün</th><th>Üreten</th><th>Masraf</th><th>Satış</th><th>Parayı Alan</th><th>Ödeme</th><th>Durum</th><th>İşlem</th></tr></thead><tbody></tbody></table></div>
     </div>
 
-    <!-- Gelir/Gider Sekmesi (HARİCİ GELİR EKLENDİ) -->
+    <!-- Gelir/Gider Sekmesi -->
     <div id="tab2" class="tab-content">
         <h2>📊 Ciro & Kar Özeti</h2>
         <div>
@@ -266,7 +271,6 @@
         
         <hr>
         
-        <!-- HARİCİ GELİR EKLEME ALANI -->
         <h2>➕ Harici Gelir Ekle (Sipariş dışı)</h2>
         <div class="three-columns">
             <div>
@@ -329,6 +333,9 @@
     <!-- Kişi Yönetimi -->
     <div id="tab4" class="tab-content">
         <h2>👥 Kişi Yönetimi</h2>
+        <p style="background:#e7f3ff; padding:10px; border-radius:8px; margin-bottom:15px;">
+            ⭐ <strong>Tuğçe ve Mustafa</strong> sabit kullanıcılardır, silinemezler. Diğer kişileri ekleyip silebilirsiniz.
+        </p>
         <div class="two-columns">
             <div>
                 <div class="form-group"><label>Kişi Adı</label><input type="text" id="person_name"></div>
@@ -337,7 +344,7 @@
             </div>
             <div>
                 <h3>📋 Kayıtlı Kişiler</h3>
-                <table id="persons_table"><thead><tr><th>Ad</th><th>Rol</th><th>İşlem</th></tr></thead><tbody></tbody></table>
+                <table id="persons_table"><thead><tr><th>Ad</th><th>Rol</th><th>İşlem</th></tr></thead><tbody></tbody><tr>
             </div>
         </div>
     </div>
@@ -391,6 +398,12 @@
     const app = initializeApp(firebaseConfig);
     const database = getDatabase(app);
     
+    // SABİT KİŞİLER (Tuğçe ve Mustafa asla silinmez)
+    const FIXED_PERSONS = [
+        { name: "Tuğçe", role: "Çalışan", isFixed: true },
+        { name: "Mustafa", role: "Çalışan", isFixed: true }
+    ];
+    
     const connectedRef = ref(database, '.info/connected');
     onValue(connectedRef, (snap) => {
         const statusDiv = document.getElementById('connectionStatus');
@@ -410,7 +423,7 @@
     const transfersRef = ref(database, 'transfers');
     const externalIncomesRef = ref(database, 'external_incomes');
 
-    let persons = [];
+    let persons = [...FIXED_PERSONS]; // Sabit kişilerle başla
     let orders = [];
     let expenses = [];
     let transfers = [];
@@ -420,24 +433,15 @@
         document.getElementById('loading').style.display = show ? 'flex' : 'none';
     }
 
-    // Başlangıç kişileri
+    // Firebase'den ek kişileri çek ve sabitlerle birleştir
     function initPersons() {
         onValue(personsRef, (snapshot) => {
-            persons = [];
+            const dbPersons = [];
             snapshot.forEach((child) => {
-                persons.push({ id: child.key, ...child.val() });
+                dbPersons.push({ id: child.key, ...child.val(), isFixed: false });
             });
-            if(persons.length === 0) {
-                const defaultPersons = [
-                    { name: "Tuğçe", role: "Çalışan" },
-                    { name: "Mustafa", role: "Çalışan" },
-                    { name: "Şirket Kasası", role: "Kasa" }
-                ];
-                defaultPersons.forEach(p => {
-                    const newRef = push(personsRef);
-                    set(newRef, p);
-                });
-            }
+            // Sabit kişiler + databaseden gelenler (sabitler her zaman önce)
+            persons = [...FIXED_PERSONS, ...dbPersons];
             updateAllDropdowns();
             renderPersons();
             renderBalances();
@@ -629,11 +633,18 @@
         }
     };
 
-    // KİŞİ EKLE
+    // KİŞİ EKLE (Sadece normal kişiler eklenir, sabitler eklenemez)
     window.addPerson = async function() {
         const name = document.getElementById('person_name').value.trim();
         const role = document.getElementById('person_role').value.trim();
         if(!name) { alert("İsim girin!"); return; }
+        
+        // Sabit kişi kontrolü
+        if(name === "Tuğçe" || name === "Mustafa") {
+            alert("Tuğçe ve Mustafa zaten sistemde kayıtlıdır!");
+            return;
+        }
+        
         showLoading(true);
         const newRef = push(personsRef);
         await set(newRef, { name, role });
@@ -643,7 +654,12 @@
     };
 
     window.deletePerson = async function(id) {
-        if(confirm('Kişi silinsin mi?')) {
+        const person = persons.find(p => p.id === id);
+        if(person && person.isFixed) {
+            alert("Tuğçe ve Mustafa silinemez! Bunlar sabit kullanıcılardır.");
+            return;
+        }
+        if(confirm('Bu kişi silinsin mi?')) {
             showLoading(true);
             await remove(ref(database, `persons/${id}`));
             showLoading(false);
@@ -762,9 +778,17 @@
         tbody.innerHTML = '';
         persons.forEach(person => {
             const row = tbody.insertRow();
-            row.insertCell(0).innerText = person.name;
+            if(person.isFixed) {
+                row.className = 'fixed-person';
+            }
+            row.insertCell(0).innerText = person.name + (person.isFixed ? " ⭐" : "");
             row.insertCell(1).innerText = person.role;
-            row.insertCell(2).innerHTML = `<button class="danger" onclick="deletePerson('${person.id}')">🗑️ Sil</button>`;
+            const actionCell = row.insertCell(2);
+            if(person.isFixed) {
+                actionCell.innerHTML = '<span style="color:gray;">Silinemez</span>';
+            } else {
+                actionCell.innerHTML = `<button class="danger" onclick="deletePerson('${person.id}')">🗑️ Sil</button>`;
+            }
         });
     }
 
@@ -788,7 +812,6 @@
         const balanceMap = new Map();
         persons.forEach(p => balanceMap.set(p.name, { cash: 0, iban: 0 }));
         
-        // Sipariş gelirleri
         orders.forEach(order => {
             const bal = balanceMap.get(order.money_taker);
             if(bal) {
@@ -797,7 +820,6 @@
             }
         });
         
-        // Harici gelirler
         externalIncomes.forEach(inc => {
             const bal = balanceMap.get(inc.taker);
             if(bal) {
@@ -806,7 +828,6 @@
             }
         });
         
-        // Masraflar
         expenses.forEach(exp => {
             const bal = balanceMap.get(exp.payer);
             if(bal) {
@@ -815,7 +836,6 @@
             }
         });
         
-        // Transferler
         transfers.forEach(t => {
             const fromBal = balanceMap.get(t.from);
             const toBal = balanceMap.get(t.to);
