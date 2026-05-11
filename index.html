@@ -96,6 +96,11 @@
             background: #28a745;
         }
 
+        button.warning {
+            background: #ffc107;
+            color: #333;
+        }
+
         table {
             width: 100%;
             border-collapse: collapse;
@@ -118,8 +123,22 @@
             top: 0;
         }
 
-        tr:nth-child(even) {
-            background: #f9f9f9;
+        /* Durum renkleri */
+        .status-alindi {
+            background-color: #fff3cd !important;
+            border-left: 4px solid #ffc107;
+        }
+        .status-uretimde {
+            background-color: #d1ecf1 !important;
+            border-left: 4px solid #17a2b8;
+        }
+        .status-teslimehazir {
+            background-color: #f8d7da !important;
+            border-left: 4px solid #dc3545;
+        }
+        .status-teslimedildi {
+            background-color: #d4edda !important;
+            border-left: 4px solid #28a745;
         }
 
         .action-buttons {
@@ -178,15 +197,13 @@
         }
 
         .status-select {
-            padding: 5px;
-            border-radius: 4px;
-            font-size: 12px;
+            padding: 8px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: bold;
+            cursor: pointer;
+            border: 1px solid #ddd;
         }
-
-        .status-alindi { background: #17a2b8; color: white; padding: 4px 8px; border-radius: 4px; display: inline-block; }
-        .status-uretimde { background: #ffc107; color: #333; padding: 4px 8px; border-radius: 4px; display: inline-block; }
-        .status-teslimehazir { background: #28a745; color: white; padding: 4px 8px; border-radius: 4px; display: inline-block; }
-        .status-teslimedildi { background: #6c757d; color: white; padding: 4px 8px; border-radius: 4px; display: inline-block; }
     </style>
 </head>
 <body>
@@ -199,6 +216,7 @@
         <button class="tab-btn" data-tab="tab2">💰 Gelir/Gider & Kar</button>
         <button class="tab-btn" data-tab="tab3">👥 Kişi Bakiyeleri</button>
         <button class="tab-btn" data-tab="tab4">⚙️ Kişi Yönetimi</button>
+        <button class="tab-btn" data-tab="tab5">💸 Para Transferi</button>
     </div>
 
     <!-- SEKMELER - Siparişler -->
@@ -229,8 +247,8 @@
             <table id="orders_table">
                 <thead>
                     <tr>
-                        <th>ID</th><th>Tarih</th><th>Müşteri</th><th>Tel</th><th>Adres</th><th>Mail</th>
-                        <th>Ürün</th><th>Üreten</th><th>Masraf</th><th>Satış</th>
+                        <th>ID</th><th>Tarih</th><th>Müşteri</th><th>Tel</th><th>Ürün</th>
+                        <th>Üreten</th><th>Masraf</th><th>Satış</th>
                         <th>Parayı Alan</th><th>Nasıl Aldı?</th><th>Durum</th><th>İşlem</th>
                     </tr>
                 </thead>
@@ -286,9 +304,32 @@
             </div>
             <div>
                 <h3>📋 Kayıtlı Kişiler</h3>
-                <table id="persons_table"><thead><tr><th>Ad</th><th>Rol</th><th>İşlem</th></tr></thead><tbody></tbody></table>
+                <table id="persons_table"><thead>运转<th>Ad</th><th>Rol</th><th>İşlem</th> </tr></thead><tbody></tbody></table>
             </div>
         </div>
+    </div>
+
+    <!-- SEKMELER - Para Transferi -->
+    <div id="tab5" class="tab-content">
+        <h2>💸 Para Transferi (Kişiden Kişiye)</h2>
+        <div class="two-columns">
+            <div>
+                <div class="form-group"><label>Gönderen Kişi</label><select id="transfer_from"><option value="">-- Seçin --</option></select></div>
+                <div class="form-group"><label>Alan Kişi</label><select id="transfer_to"><option value="">-- Seçin --</option></select></div>
+                <div class="form-group"><label>Tutar (TL)</label><input type="number" id="transfer_amount" placeholder="Miktar"></div>
+                <div class="form-group"><label>Açıklama</label><input type="text" id="transfer_desc" placeholder="Örn: Nakit ödeme, borç"></div>
+            </div>
+            <div>
+                <div class="form-group"><label>Transfer Türü</label><select id="transfer_type"><option value="Nakit">Nakit → Nakit</option><option value="NakitToIban">Nakit → İban</option><option value="IbanToNakit">İban → Nakit</option><option value="Iban">İban → İban</option></select></div>
+                <button onclick="addTransfer()" style="margin-top: 30px;">💸 Transfer Yap</button>
+            </div>
+        </div>
+        <hr>
+        <h2>📋 Transfer Geçmişi</h2>
+        <table id="transfers_table">
+            <thead><tr><th>Tarih</th><th>Gönderen</th><th>Alan</th><th>Tutar</th><th>Tür</th><th>Açıklama</th><th>İşlem</th> </tr></thead>
+            <tbody></tbody>
+        </table>
     </div>
 </div>
 
@@ -297,6 +338,7 @@
     let orders = JSON.parse(localStorage.getItem('orders')) || [];
     let persons = JSON.parse(localStorage.getItem('persons')) || [];
     let expenses = JSON.parse(localStorage.getItem('expenses')) || [];
+    let transfers = JSON.parse(localStorage.getItem('transfers')) || [];
 
     // BAŞLANGIÇ KİŞİLERİ
     if(persons.length === 0){
@@ -306,7 +348,7 @@
         savePersons();
     }
 
-    // ÖRNEK SİPARİŞ (test için)
+    // ÖRNEK SİPARİŞ
     if(orders.length === 0){
         orders.push({
             id: Date.now(),
@@ -329,11 +371,14 @@
     function saveOrders(){ localStorage.setItem('orders', JSON.stringify(orders)); }
     function savePersons(){ localStorage.setItem('persons', JSON.stringify(persons)); }
     function saveExpenses(){ localStorage.setItem('expenses', JSON.stringify(expenses)); }
+    function saveTransfers(){ localStorage.setItem('transfers', JSON.stringify(transfers)); }
 
     function updateAllDropdowns(){
         let producerSelect = document.getElementById('producer');
         let moneyTakerSelect = document.getElementById('money_taker');
         let expensePayerSelect = document.getElementById('expense_payer');
+        let transferFrom = document.getElementById('transfer_from');
+        let transferTo = document.getElementById('transfer_to');
         
         let options = '<option value="">-- Seçin --</option>';
         persons.forEach(p => { options += `<option value="${p.name}">${p.name}</option>`; });
@@ -341,7 +386,53 @@
         if(producerSelect) producerSelect.innerHTML = options;
         if(moneyTakerSelect) moneyTakerSelect.innerHTML = options;
         if(expensePayerSelect) expensePayerSelect.innerHTML = options;
+        if(transferFrom) transferFrom.innerHTML = options;
+        if(transferTo) transferTo.innerHTML = options;
     }
+
+    // PARA TRANSFERİ
+    window.addTransfer = function(){
+        let from = document.getElementById('transfer_from').value;
+        let to = document.getElementById('transfer_to').value;
+        let amount = parseFloat(document.getElementById('transfer_amount').value);
+        let desc = document.getElementById('transfer_desc').value;
+        let type = document.getElementById('transfer_type').value;
+        
+        if(!from || !to || amount <= 0){
+            alert("Lütfen gönderen, alan ve geçerli bir tutar girin!");
+            return;
+        }
+        if(from === to){
+            alert("Gönderen ve alan kişi aynı olamaz!");
+            return;
+        }
+        
+        let transfer = {
+            id: Date.now(),
+            date: new Date().toISOString().slice(0,10),
+            from: from,
+            to: to,
+            amount: amount,
+            type: type,
+            desc: desc
+        };
+        
+        transfers.push(transfer);
+        saveTransfers();
+        renderTransfers();
+        renderBalances();
+        document.getElementById('transfer_amount').value = '';
+        document.getElementById('transfer_desc').value = '';
+    };
+    
+    window.deleteTransfer = function(id){
+        if(confirm('Transfer silinsin mi?')){
+            transfers = transfers.filter(t => t.id != id);
+            saveTransfers();
+            renderTransfers();
+            renderBalances();
+        }
+    };
 
     // SİPARİŞ EKLE
     window.addOrder = function(){
@@ -393,7 +484,6 @@
         document.getElementById('price').value = '';
     }
 
-    // SİPARİŞ SİL
     window.deleteOrder = function(id){
         if(confirm('Sipariş silinsin mi?')){
             orders = orders.filter(o => o.id != id);
@@ -404,7 +494,6 @@
         }
     };
     
-    // DURUM GÜNCELLEME (açılır menüden)
     window.updateStatus = function(id, newStatus){
         let order = orders.find(o => o.id == id);
         if(order){
@@ -416,7 +505,6 @@
         }
     };
 
-    // SİPARİŞİN TAMAMINI DÜZENLE (popup ile)
     window.editFullOrder = function(id){
         let order = orders.find(o => o.id == id);
         if(order){
@@ -443,7 +531,6 @@
         }
     };
 
-    // MASRAF EKLE
     window.addExpense = function(){
         let expense = {
             id: Date.now(),
@@ -476,7 +563,6 @@
         }
     };
 
-    // KİŞİ EKLE/SİL
     window.addPerson = function(){
         let name = document.getElementById('person_name').value.trim();
         let role = document.getElementById('person_role').value.trim();
@@ -512,21 +598,29 @@
         
         orders.forEach(order => {
             let row = tbody.insertRow();
+            
+            // Duruma göre sınıf ekle
+            let statusClass = '';
+            if(order.status === 'Alındı') statusClass = 'status-alindi';
+            else if(order.status === 'Üretimde') statusClass = 'status-uretimde';
+            else if(order.status === 'Teslime Hazır') statusClass = 'status-teslimehazir';
+            else if(order.status === 'Teslim Edildi') statusClass = 'status-teslimedildi';
+            
+            row.className = statusClass;
+            
             row.insertCell(0).innerText = order.id;
             row.insertCell(1).innerText = order.date;
             row.insertCell(2).innerText = order.customer_name;
             row.insertCell(3).innerText = order.customer_phone;
-            row.insertCell(4).innerText = order.customer_address.substring(0,30);
-            row.insertCell(5).innerText = order.customer_email;
-            row.insertCell(6).innerText = order.product_desc.substring(0,30);
-            row.insertCell(7).innerText = order.producer;
-            row.insertCell(8).innerText = order.cost + " TL";
-            row.insertCell(9).innerText = order.price + " TL";
-            row.insertCell(10).innerText = order.money_taker;
-            row.insertCell(11).innerText = order.payment_type;
+            row.insertCell(4).innerText = order.product_desc.substring(0,30);
+            row.insertCell(5).innerText = order.producer;
+            row.insertCell(6).innerText = order.cost + " TL";
+            row.insertCell(7).innerText = order.price + " TL";
+            row.insertCell(8).innerText = order.money_taker;
+            row.insertCell(9).innerText = order.payment_type;
             
-            // Durum hücresi (açılır menü ile)
-            let statusCell = row.insertCell(12);
+            // Durum dropdown'ı
+            let statusCell = row.insertCell(10);
             let statusSelect = document.createElement('select');
             statusSelect.className = 'status-select';
             let statuses = ['Alındı', 'Üretimde', 'Teslime Hazır', 'Teslim Edildi'];
@@ -541,7 +635,7 @@
             statusCell.appendChild(statusSelect);
             
             // İşlem butonları
-            let actionCell = row.insertCell(13);
+            let actionCell = row.insertCell(11);
             actionCell.className = 'action-buttons';
             actionCell.innerHTML = `
                 <button onclick="editFullOrder(${order.id})">✏️ Düzenle</button>
@@ -579,10 +673,28 @@
         });
     }
     
+    function renderTransfers(){
+        let tbody = document.querySelector('#transfers_table tbody');
+        if(!tbody) return;
+        tbody.innerHTML = '';
+        transfers.forEach(transfer => {
+            let row = tbody.insertRow();
+            row.insertCell(0).innerText = transfer.date;
+            row.insertCell(1).innerText = transfer.from;
+            row.insertCell(2).innerText = transfer.to;
+            row.insertCell(3).innerText = transfer.amount + " TL";
+            row.insertCell(4).innerText = transfer.type;
+            row.insertCell(5).innerText = transfer.desc;
+            let actionCell = row.insertCell(6);
+            actionCell.innerHTML = `<button class="danger" onclick="deleteTransfer(${transfer.id})">🗑️ Sil</button>`;
+        });
+    }
+    
     function renderBalances(){
         let balanceMap = new Map();
         persons.forEach(p => { balanceMap.set(p.name, {cash:0, iban:0}); });
         
+        // Siparişlerden gelen gelirler
         orders.forEach(order => {
             let bal = balanceMap.get(order.money_taker);
             if(bal){
@@ -592,12 +704,37 @@
             }
         });
         
+        // Masraflar
         expenses.forEach(exp => {
             let bal = balanceMap.get(exp.payer);
             if(bal){
                 if(exp.payment_type === 'Nakit') bal.cash -= exp.amount;
                 else bal.iban -= exp.amount;
                 balanceMap.set(exp.payer, bal);
+            }
+        });
+        
+        // Transferler
+        transfers.forEach(transfer => {
+            let fromBal = balanceMap.get(transfer.from);
+            let toBal = balanceMap.get(transfer.to);
+            if(fromBal && toBal){
+                let amount = transfer.amount;
+                if(transfer.type === 'Nakit'){
+                    fromBal.cash -= amount;
+                    toBal.cash += amount;
+                } else if(transfer.type === 'NakitToIban'){
+                    fromBal.cash -= amount;
+                    toBal.iban += amount;
+                } else if(transfer.type === 'IbanToNakit'){
+                    fromBal.iban -= amount;
+                    toBal.cash += amount;
+                } else if(transfer.type === 'Iban'){
+                    fromBal.iban -= amount;
+                    toBal.iban += amount;
+                }
+                balanceMap.set(transfer.from, fromBal);
+                balanceMap.set(transfer.to, toBal);
             }
         });
         
@@ -624,7 +761,6 @@
         document.getElementById('net_profit').innerHTML = netProfit.toFixed(2) + " TL";
     }
     
-    // SEKME GEÇİŞLERİ
     function initTabs(){
         document.querySelectorAll('.tab-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
@@ -634,6 +770,10 @@
                 document.getElementById(btn.dataset.tab).classList.add('active');
                 if(btn.dataset.tab === 'tab3') renderBalances();
                 if(btn.dataset.tab === 'tab4') renderPersons();
+                if(btn.dataset.tab === 'tab5') {
+                    renderTransfers();
+                    updateAllDropdowns();
+                }
                 if(btn.dataset.tab === 'tab2') {
                     renderExpenses();
                     updateSummary();
@@ -643,13 +783,13 @@
         });
     }
     
-    // SAYFA YÜKLENİNCE
     document.addEventListener('DOMContentLoaded', () => {
         initTabs();
         updateAllDropdowns();
         renderOrders();
         renderPersons();
         renderExpenses();
+        renderTransfers();
         renderBalances();
         updateSummary();
         let today = new Date().toISOString().slice(0,10);
