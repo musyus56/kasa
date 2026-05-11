@@ -112,11 +112,6 @@
             background: #28a745;
         }
 
-        button.warning {
-            background: #ffc107;
-            color: #333;
-        }
-
         table {
             width: 100%;
             border-collapse: collapse;
@@ -209,11 +204,6 @@
             background: #d4edda;
             border-left: 4px solid #28a745;
         }
-
-        .fixed-person {
-            background-color: #e7f3ff;
-            font-weight: bold;
-        }
     </style>
 </head>
 <body>
@@ -247,14 +237,14 @@
                 <div class="form-group"><label>Masraf (TL)</label><input type="number" id="cost"></div>
                 <div class="form-group"><label>Satış Fiyatı (TL)</label><input type="number" id="price"></div>
                 <div class="form-group"><label>Parayı Alan</label><select id="money_taker"></select></div>
-                <div class="form-group"><label>Ödeme Türü (Nasıl aldı?)</label><select id="payment_type"><option value="Nakit">Nakit</option><option value="İban">İban</option><option value="Havale">Havale</option></select></div>
+                <div class="form-group"><label>Ödeme Türü (Nasıl aldı?)</label><select id="payment_type"><option value="Nakit">Nakit</option><option value="İban">İban</option><option value="Havale">Havale</option><option value="Kredi Kartı">Kredi Kartı</option></select></div>
                 <div class="form-group"><label>Durum</label><select id="status"><option value="Alındı">Alındı</option><option value="Üretimde">Üretimde</option><option value="Teslime Hazır">Teslime Hazır</option><option value="Teslim Edildi">Teslim Edildi</option></select></div>
                 <button onclick="addOrder()">✅ Sipariş Ekle</button>
             </div>
         </div>
         <hr>
         <h2>📋 Sipariş Listesi</h2>
-        <div style="overflow-x: auto;"><table id="orders_table"><thead><tr><th>Tarih</th><th>Müşteri</th><th>Tel</th><th>Ürün</th><th>Üreten</th><th>Masraf</th><th>Satış</th><th>Parayı Alan</th><th>Ödeme</th><th>Durum</th><th>İşlem</th></tr></thead><tbody></tbody></table></div>
+        <div style="overflow-x: auto;"><table id="orders_table"><thead><tr><th>Tarih</th><th>Müşteri</th><th>Tel</th><th>Ürün</th><th>Üreten</th><th>Masraf</th><th>Satış</th><th>Parayı Alan</th><th>Ödeme</th><th>Durum</th><th>İşlem</th></tr></thead><tbody></tbody><table></div>
     </div>
 
     <!-- Gelir/Gider Sekmesi -->
@@ -271,7 +261,7 @@
         
         <hr>
         
-        <h2>➕ Harici Gelir Ekle (Sipariş dışı)</h2>
+        <h2>💰 Harici Gelir Ekle (Sipariş dışı)</h2>
         <div class="three-columns">
             <div>
                 <div class="form-group"><label>Gelir Açıklaması</label><input type="text" id="external_income_desc" placeholder="Örn: Elden satış, danışmanlık"></div>
@@ -292,11 +282,11 @@
         <h2>➕ Masraf Ekle (Filament, Kargo, Elektrik vs.)</h2>
         <div class="three-columns">
             <div>
-                <div class="form-group"><label>Açıklama</label><input type="text" id="expense_desc"></div>
-                <div class="form-group"><label>Miktar</label><input type="number" id="expense_amount"></div>
+                <div class="form-group"><label>Açıklama</label><input type="text" id="expense_desc" placeholder="Örn: Filament aldım"></div>
+                <div class="form-group"><label>Miktar (TL)</label><input type="number" id="expense_amount" placeholder="Tutar"></div>
             </div>
             <div>
-                <div class="form-group"><label>Ödeyen</label><select id="expense_payer"></select></div>
+                <div class="form-group"><label>Parayı Ödeyen</label><select id="expense_payer"></select></div>
                 <div class="form-group"><label>Ödeme Türü</label><select id="expense_payment_type"><option value="Nakit">Nakit</option><option value="İban">İban</option></select></div>
             </div>
             <div>
@@ -325,7 +315,7 @@
     <div id="tab3" class="tab-content">
         <h2>💰 Kimde Ne Kadar Para Var?</h2>
         <table id="balances_table">
-            <thead><tr><th>Kişi</th><th>Nakit</th><th>İban</th><th>Toplam</th></tr></thead>
+            <thead><tr><th>Kişi</th><th>Nakit (TL)</th><th>İban (TL)</th><th>Toplam (TL)</th></tr></thead>
             <tbody></tbody>
         </table>
     </div>
@@ -333,34 +323,32 @@
     <!-- Kişi Yönetimi -->
     <div id="tab4" class="tab-content">
         <h2>👥 Kişi Yönetimi</h2>
-        <p style="background:#e7f3ff; padding:10px; border-radius:8px; margin-bottom:15px;">
-            ⭐ <strong>Tuğçe ve Mustafa</strong> sabit kullanıcılardır, silinemezler. Diğer kişileri ekleyip silebilirsiniz.
-        </p>
         <div class="two-columns">
             <div>
-                <div class="form-group"><label>Kişi Adı</label><input type="text" id="person_name"></div>
-                <div class="form-group"><label>Rol</label><input type="text" id="person_role"></div>
+                <div class="form-group"><label>Kişi Adı</label><input type="text" id="person_name" placeholder="Örn: Tuğçe, Mustafa"></div>
+                <div class="form-group"><label>Rol</label><input type="text" id="person_role" placeholder="Çalışan / Dış Baskıcı / Kasa"></div>
                 <button onclick="addPerson()">➕ Kişi Ekle</button>
             </div>
             <div>
                 <h3>📋 Kayıtlı Kişiler</h3>
-                <table id="persons_table"><thead><tr><th>Ad</th><th>Rol</th><th>İşlem</th></tr></thead><tbody></tbody><tr>
+                <table id="persons_table"><thead><tr><th>Ad</th><th>Rol</th><th>İşlem</th></tr></thead><tbody></tbody></table>
             </div>
         </div>
+        <p style="margin-top:15px; font-size:12px; color:gray;">Not: Bu listedeki kişiler tüm dropdown menülerde görünecektir.</p>
     </div>
 
     <!-- Para Transferi -->
     <div id="tab5" class="tab-content">
-        <h2>💸 Para Transferi</h2>
+        <h2>💸 Para Transferi (Kişiden Kişiye)</h2>
         <div class="two-columns">
             <div>
-                <div class="form-group"><label>Gönderen</label><select id="transfer_from"></select></div>
-                <div class="form-group"><label>Alan</label><select id="transfer_to"></select></div>
-                <div class="form-group"><label>Tutar</label><input type="number" id="transfer_amount"></div>
+                <div class="form-group"><label>Gönderen Kişi</label><select id="transfer_from"></select></div>
+                <div class="form-group"><label>Alan Kişi</label><select id="transfer_to"></select></div>
+                <div class="form-group"><label>Tutar (TL)</label><input type="number" id="transfer_amount" placeholder="Miktar"></div>
             </div>
             <div>
-                <div class="form-group"><label>Transfer Türü</label><select id="transfer_type"><option value="Nakit">Nakit→Nakit</option><option value="NakitToIban">Nakit→İban</option><option value="IbanToNakit">İban→Nakit</option><option value="Iban">İban→İban</option></select></div>
-                <div class="form-group"><label>Açıklama</label><input type="text" id="transfer_desc"></div>
+                <div class="form-group"><label>Transfer Türü</label><select id="transfer_type"><option value="Nakit">Nakit → Nakit</option><option value="NakitToIban">Nakit → İban</option><option value="IbanToNakit">İban → Nakit</option><option value="Iban">İban → İban</option></select></div>
+                <div class="form-group"><label>Açıklama</label><input type="text" id="transfer_desc" placeholder="Örn: Borç ödemesi"></div>
                 <button onclick="addTransfer()">💸 Transfer Yap</button>
             </div>
         </div>
@@ -398,24 +386,6 @@
     const app = initializeApp(firebaseConfig);
     const database = getDatabase(app);
     
-    // SABİT KİŞİLER (Tuğçe ve Mustafa asla silinmez)
-    const FIXED_PERSONS = [
-        { name: "Tuğçe", role: "Çalışan", isFixed: true },
-        { name: "Mustafa", role: "Çalışan", isFixed: true }
-    ];
-    
-    const connectedRef = ref(database, '.info/connected');
-    onValue(connectedRef, (snap) => {
-        const statusDiv = document.getElementById('connectionStatus');
-        if(snap.val() === true) {
-            statusDiv.className = "connection-status connected";
-            statusDiv.innerHTML = "✅ Firebase Bağlı";
-        } else {
-            statusDiv.className = "connection-status disconnected";
-            statusDiv.innerHTML = "❌ Bağlantı Kesildi";
-        }
-    });
-
     // Referanslar
     const ordersRef = ref(database, 'orders');
     const personsRef = ref(database, 'persons');
@@ -423,28 +393,70 @@
     const transfersRef = ref(database, 'transfers');
     const externalIncomesRef = ref(database, 'external_incomes');
 
-    let persons = [...FIXED_PERSONS]; // Sabit kişilerle başla
+    let persons = [];
     let orders = [];
     let expenses = [];
     let transfers = [];
     let externalIncomes = [];
 
     function showLoading(show) {
-        document.getElementById('loading').style.display = show ? 'flex' : 'none';
+        const loadingDiv = document.getElementById('loading');
+        if(loadingDiv) loadingDiv.style.display = show ? 'flex' : 'none';
     }
 
-    // Firebase'den ek kişileri çek ve sabitlerle birleştir
+    // Tüm dropdown'ları güncelle (kesin çalışan versiyon)
+    function updateAllDropdowns() {
+        const selectIds = ['producer', 'money_taker', 'expense_payer', 'transfer_from', 'transfer_to', 'external_income_taker'];
+        
+        selectIds.forEach(id => {
+            const select = document.getElementById(id);
+            if(select) {
+                // Mevcut seçili değeri sakla
+                const currentValue = select.value;
+                select.innerHTML = '<option value="">-- Seçin --</option>';
+                
+                persons.forEach(person => {
+                    const option = document.createElement('option');
+                    option.value = person.name;
+                    option.textContent = person.name;
+                    if(currentValue === person.name) option.selected = true;
+                    select.appendChild(option);
+                });
+            }
+        });
+        
+        // Debug için
+        console.log('Dropdownlar güncellendi. Kişi sayısı:', persons.length);
+        if(persons.length > 0) {
+            console.log('Kişiler:', persons.map(p => p.name).join(', '));
+        }
+    }
+
+    // Başlangıç kişileri
     function initPersons() {
         onValue(personsRef, (snapshot) => {
-            const dbPersons = [];
+            persons = [];
             snapshot.forEach((child) => {
-                dbPersons.push({ id: child.key, ...child.val(), isFixed: false });
+                persons.push({ id: child.key, ...child.val() });
             });
-            // Sabit kişiler + databaseden gelenler (sabitler her zaman önce)
-            persons = [...FIXED_PERSONS, ...dbPersons];
-            updateAllDropdowns();
-            renderPersons();
-            renderBalances();
+            
+            if(persons.length === 0) {
+                // Varsayılan kişileri ekle
+                const defaultPersons = [
+                    { name: "Tuğçe", role: "Çalışan" },
+                    { name: "Mustafa", role: "Çalışan" },
+                    { name: "Şirket Kasası", role: "Kasa" }
+                ];
+                defaultPersons.forEach(p => {
+                    const newRef = push(personsRef);
+                    set(newRef, p);
+                });
+            } else {
+                // Kişiler geldiyse dropdownları güncelle
+                updateAllDropdowns();
+                renderPersons();
+                renderBalances();
+            }
         });
     }
 
@@ -495,17 +507,6 @@
         });
     }
 
-    function updateAllDropdowns() {
-        const selects = ['producer', 'money_taker', 'expense_payer', 'transfer_from', 'transfer_to', 'external_income_taker'];
-        selects.forEach(id => {
-            const select = document.getElementById(id);
-            if(select) {
-                select.innerHTML = '<option value="">-- Seçin --</option>' + 
-                    persons.map(p => `<option value="${p.name}">${p.name}</option>`).join('');
-            }
-        });
-    }
-
     // HARİCİ GELİR EKLE
     window.addExternalIncome = async function() {
         const income = {
@@ -529,7 +530,6 @@
         
         document.getElementById('external_income_desc').value = '';
         document.getElementById('external_income_amount').value = '';
-        document.getElementById('external_income_date').value = new Date().toISOString().slice(0,10);
     };
     
     window.deleteExternalIncome = async function(id) {
@@ -614,7 +614,7 @@
             timestamp: Date.now()
         };
         if(!expense.desc || expense.amount <= 0 || !expense.payer) {
-            alert("Tüm alanları doldurun!");
+            alert("Lütfen açıklama, tutar ve ödeyen kişiyi girin!");
             return;
         }
         showLoading(true);
@@ -633,18 +633,11 @@
         }
     };
 
-    // KİŞİ EKLE (Sadece normal kişiler eklenir, sabitler eklenemez)
+    // KİŞİ EKLE
     window.addPerson = async function() {
         const name = document.getElementById('person_name').value.trim();
         const role = document.getElementById('person_role').value.trim();
         if(!name) { alert("İsim girin!"); return; }
-        
-        // Sabit kişi kontrolü
-        if(name === "Tuğçe" || name === "Mustafa") {
-            alert("Tuğçe ve Mustafa zaten sistemde kayıtlıdır!");
-            return;
-        }
-        
         showLoading(true);
         const newRef = push(personsRef);
         await set(newRef, { name, role });
@@ -654,12 +647,7 @@
     };
 
     window.deletePerson = async function(id) {
-        const person = persons.find(p => p.id === id);
-        if(person && person.isFixed) {
-            alert("Tuğçe ve Mustafa silinemez! Bunlar sabit kullanıcılardır.");
-            return;
-        }
-        if(confirm('Bu kişi silinsin mi?')) {
+        if(confirm('Kişi silinsin mi?')) {
             showLoading(true);
             await remove(ref(database, `persons/${id}`));
             showLoading(false);
@@ -674,8 +662,8 @@
         const type = document.getElementById('transfer_type').value;
         const desc = document.getElementById('transfer_desc').value;
         
-        if(!from || !to || amount <= 0) { alert("Geçerli bilgiler girin!"); return; }
-        if(from === to) { alert("Aynı kişiye transfer olmaz!"); return; }
+        if(!from || !to || amount <= 0) { alert("Lütfen gönderen, alan ve geçerli bir tutar girin!"); return; }
+        if(from === to) { alert("Gönderen ve alan kişi aynı olamaz!"); return; }
         
         const transfer = {
             date: new Date().toISOString().slice(0,10),
@@ -778,18 +766,13 @@
         tbody.innerHTML = '';
         persons.forEach(person => {
             const row = tbody.insertRow();
-            if(person.isFixed) {
-                row.className = 'fixed-person';
-            }
-            row.insertCell(0).innerText = person.name + (person.isFixed ? " ⭐" : "");
+            row.insertCell(0).innerText = person.name;
             row.insertCell(1).innerText = person.role;
-            const actionCell = row.insertCell(2);
-            if(person.isFixed) {
-                actionCell.innerHTML = '<span style="color:gray;">Silinemez</span>';
-            } else {
-                actionCell.innerHTML = `<button class="danger" onclick="deletePerson('${person.id}')">🗑️ Sil</button>`;
-            }
+            row.insertCell(2).innerHTML = `<button class="danger" onclick="deletePerson('${person.id}')">🗑️ Sil</button>`;
         });
+        
+        // Kişi listesi değiştiğinde dropdownları güncelle
+        updateAllDropdowns();
     }
 
     function renderTransfers() {
@@ -874,6 +857,7 @@
         document.getElementById('net_profit').innerHTML = (siparisCiro + hariciGelir - totalProductCost - totalExtraCost).toFixed(2) + " TL";
     }
 
+    // Sekme geçişleri
     function initTabs() {
         document.querySelectorAll('.tab-btn').forEach(btn => {
             btn.addEventListener('click', () => {
@@ -884,11 +868,28 @@
                 if(btn.dataset.tab === 'tab3') renderBalances();
                 if(btn.dataset.tab === 'tab4') renderPersons();
                 if(btn.dataset.tab === 'tab5') renderTransfers();
+                if(btn.dataset.tab === 'tab2') {
+                    renderExternalIncomes();
+                    renderExpenses();
+                }
             });
         });
     }
 
-    // Başlat
+    // Bağlantı durumu
+    const connectedRef = ref(database, '.info/connected');
+    onValue(connectedRef, (snap) => {
+        const statusDiv = document.getElementById('connectionStatus');
+        if(snap.val() === true) {
+            statusDiv.className = "connection-status connected";
+            statusDiv.innerHTML = "✅ Firebase Bağlı";
+        } else {
+            statusDiv.className = "connection-status disconnected";
+            statusDiv.innerHTML = "❌ Bağlantı Kesildi";
+        }
+    });
+
+    // BAŞLAT
     document.addEventListener('DOMContentLoaded', () => {
         initTabs();
         initPersons();
@@ -896,8 +897,19 @@
         initExpenses();
         initTransfers();
         initExternalIncomes();
-        document.getElementById('order_date').value = new Date().toISOString().slice(0,10);
-        document.getElementById('external_income_date').value = new Date().toISOString().slice(0,10);
+        
+        // Bugünün tarihini ayarla
+        const today = new Date().toISOString().slice(0,10);
+        const dateInputs = ['order_date', 'external_income_date'];
+        dateInputs.forEach(id => {
+            const el = document.getElementById(id);
+            if(el) el.value = today;
+        });
+        
+        // 1 saniye sonra dropdownları tekrar kontrol et
+        setTimeout(() => {
+            updateAllDropdowns();
+        }, 1000);
     });
 </script>
 </body>
